@@ -1,0 +1,9 @@
+inputs:
+  tickets:
+    from_api:
+      validation: true
+
+outputs:
+  tickets:
+    to_bq:
+      validation: true

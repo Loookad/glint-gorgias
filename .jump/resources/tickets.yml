@@ -1,0 +1,102 @@
+# .jump/resources/tickets.yml
+description: "Tickets data from Gorgias API"
+
+schema:
+    fields:
+        id:
+            type: int64
+        uri:
+            type: string
+        external_id:
+            type: string
+            is_nullable: true
+        language:
+            type: string
+        status:
+            type: string
+        priority:
+            type: string
+        channel:
+            type: string
+        via:
+            type: string
+        from_agent:
+            type: bool
+        customer:
+            type: string
+        assignee_user:
+            type: string
+            is_nullable: true
+        assignee_team:
+            type: string
+            is_nullable: true
+        subject:
+            type: string
+        summary:
+            type: string
+            is_nullable: true
+        excerpt:
+            type: string
+        integrations:
+            type: string
+        meta:
+            type: string
+            is_nullable: true
+        tags:
+            type: string
+        messages_count:
+            type: int64
+        is_unread:
+            type: bool
+        spam:
+            type: bool
+        created_datetime:
+            type: string
+        opened_datetime:
+            type: string
+            is_nullable: true
+        last_received_message_datetime:
+            type: string
+        last_message_datetime:
+            type: string
+        last_sent_message_not_delivered:
+            type: bool
+        updated_datetime:
+            type: string
+        closed_datetime:
+            type: string
+            is_nullable: true
+        snooze_datetime:
+            type: string
+            is_nullable: true
+        trashed_datetime:
+            type: string
+            is_nullable: true
+        custom_fields:
+            type: string
+
+from_api:
+    location: gorgias_training
+    api:
+        request:
+            path: tickets
+            query_params:
+                limit: 30
+        response:
+            query: data[]
+        # pagination:
+        #     strategy: cursor_pagination
+        #     cursor:
+        #         position: body
+        #         query: meta.next_cursor
+        #         injection: 
+        #             position: query_parameters
+        #             param_name: cursor
+        #     per_request_config:
+        #         interval: 0.5
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: test.gorgias_tickets
+        if_exists: replace
