@@ -1,8 +1,7 @@
 schedules:
     timezone: Europe/Rome
     fixed:
-        config:
-            cron: '0 0 * * *'
+        cron: '0 0 * * *'
 
 inputs:
   tickets:
