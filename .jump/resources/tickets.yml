@@ -112,7 +112,9 @@ from_api:
         request:
             path: tickets
             query_params:
-                limit: 30
+                limit: 100
+                view_id: 4811070
+                order_by: created_datetime:desc
         response:
             query: >-
                 data[].{
@@ -160,19 +162,19 @@ from_api:
                 trashed_datetime: trashed_datetime,
                 custom_fields: custom_fields
                 }
-        # pagination:
-        #     strategy: cursor_pagination
-        #     cursor:
-        #         position: body
-        #         query: meta.next_cursor
-        #         injection: 
-        #             position: query_parameters
-        #             param_name: cursor
-        #     per_request_config:
-        #         interval: 0.5
+        pagination:
+            strategy: cursor_pagination
+            cursor:
+                position: body
+                query: meta.next_cursor
+                injection: 
+                    position: query_parameters
+                    param_name: cursor
+            per_request_config:
+                interval: 0.5
 
 to_bq:
     location: hiop_project_raw
     sql:
         table: test.gorgias_tickets
-        if_exists: replace
+        if_exists: append
