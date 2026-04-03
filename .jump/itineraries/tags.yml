@@ -1,0 +1,16 @@
+description: "Extract tags from Gorgias API and load them into BigQuery"
+
+satellite:
+  tier: small
+  communication:
+    timeout: 3600
+
+inputs:
+  tags:
+    from_api:
+      validation: true
+
+outputs:
+  tags:
+    to_bq:
+      validation: true

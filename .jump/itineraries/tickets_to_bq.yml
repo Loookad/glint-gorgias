@@ -1,0 +1,14 @@
+schedules:
+    timezone: Europe/Rome
+    fixed:
+        cron: '0 0 * * *'
+
+inputs:
+  tickets:
+    from_api:
+      validation: true
+
+outputs:
+  tickets:
+    to_bq:
+      validation: true

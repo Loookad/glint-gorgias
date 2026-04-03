@@ -1,0 +1,180 @@
+# .jump/resources/tickets.yml
+description: "Tickets data from Gorgias API"
+
+schema:
+    fields:
+        id:
+            type: int64
+        uri:
+            type: string
+        external_id:
+            type: string
+            is_nullable: true
+        language:
+            type: string
+        status:
+            type: string
+        priority:
+            type: string
+        channel:
+            type: string
+        via:
+            type: string
+        from_agent:
+            type: bool
+        customer_id:
+            type: int64
+        customer_email:
+            type: string
+        customer_name:
+            type: string
+        customer_firstname:
+            type: string
+        customer_lastname:
+            type: string
+        customer_meta:
+            type: string
+        assignee_user_id:
+            type: int64
+            is_nullable: true
+        assignee_user_email:
+            type: string
+            is_nullable: true
+        assignee_user_name:
+            type: string
+            is_nullable: true
+        assignee_user_firstname:
+            type: string
+            is_nullable: true
+        assignee_user_lastname:
+            type: string
+            is_nullable: true
+        assignee_user_bio:
+            type: string
+            is_nullable: true
+        assignee_team_id:
+            type: int64
+            is_nullable: true
+        assignee_team_name:
+            type: string
+            is_nullable: true
+        subject:
+            type: string
+        summary_content:
+            type: string
+            is_nullable: true
+        summary_triggered_by:
+            type: int64
+            is_nullable: true
+        excerpt:
+            type: string
+        integrations:
+            type: string
+        meta:
+            type: string
+            is_nullable: true
+        tags:
+            type: string
+        messages_count:
+            type: int64
+        is_unread:
+            type: bool
+        spam:
+            type: bool
+        created_datetime:
+            type: string
+        opened_datetime:
+            type: string
+            is_nullable: true
+        last_received_message_datetime:
+            type: string
+        last_message_datetime:
+            type: string
+        last_sent_message_not_delivered:
+            type: bool
+        updated_datetime:
+            type: string
+        closed_datetime:
+            type: string
+            is_nullable: true
+        snooze_datetime:
+            type: string
+            is_nullable: true
+        trashed_datetime:
+            type: string
+            is_nullable: true
+        custom_fields:
+            type: string
+
+from_api:
+    location: gorgias_training
+    api:
+        request:
+            path: tickets
+            query_params:
+                limit: 100
+                view_id: 4811070
+                order_by: created_datetime:desc
+        response:
+            query: >-
+                data[].{
+                id: id,
+                uri: uri,
+                external_id: external_id,
+                language: language,
+                status: status,
+                priority: priority,
+                channel: channel,
+                via: via,
+                from_agent: from_agent,
+                customer_id: customer.id,
+                customer_email: customer.email,
+                customer_name: customer.name,
+                customer_firstname: customer.firstname,
+                customer_lastname: customer.lastname,
+                customer_meta: customer.meta,
+                assignee_user_id: assignee_user.id,
+                assignee_user_email: assignee_user.email,
+                assignee_user_name: assignee_user.name,
+                assignee_user_firstname: assignee_user.firstname,
+                assignee_user_lastname: assignee_user.lastname,
+                assignee_user_bio: assignee_user.bio,
+                assignee_team_id: assignee_team.id,
+                assignee_team_name: assignee_team.name,
+                subject: subject,
+                summary_content: summary.content,
+                summary_triggered_by: summary.triggered_by,
+                excerpt: excerpt,
+                integrations: integrations,
+                meta: meta,
+                tags: tags,
+                messages_count: messages_count,
+                is_unread: is_unread,
+                spam: spam,
+                created_datetime: created_datetime,
+                opened_datetime: opened_datetime,
+                last_received_message_datetime: last_received_message_datetime,
+                last_message_datetime: last_message_datetime,
+                last_sent_message_not_delivered: last_sent_message_not_delivered,
+                updated_datetime: updated_datetime,
+                closed_datetime: closed_datetime,
+                snooze_datetime: snooze_datetime,
+                trashed_datetime: trashed_datetime,
+                custom_fields: custom_fields
+                }
+        pagination:
+            strategy: cursor_pagination
+            cursor:
+                position: body
+                query: meta.next_cursor
+                injection: 
+                    position: query_parameters
+                    param_name: cursor
+            per_request_config:
+                interval: 0.5
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: test.gorgias_tickets
+        if_exists: append
