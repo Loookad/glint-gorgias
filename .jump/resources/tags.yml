@@ -1,0 +1,59 @@
+description: "Tags data from Gorgias API"
+
+schema:
+    fields:
+        id:
+            type: int64
+        uri:
+            type: string
+        name:
+            type: string
+        description:
+            type: string
+            is_nullable: true
+        decoration_color:
+            type: string
+        usage:
+            type: int64
+        created_datetime:
+            type: string
+        deleted_datetime:
+            type: string
+            is_nullable: true
+
+from_api:
+    location: gorgias_training
+    api:
+        request:
+            path: tags
+            query_params:
+                limit: 50
+                order_by: created_datetime:desc
+        response:
+            query: >-
+                data[].{
+                id: id,
+                uri: uri,
+                name: name,
+                description: description,
+                decoration_color: decoration.color,
+                usage: usage,
+                created_datetime: created_datetime,
+                deleted_datetime: deleted_datetime
+                }
+        pagination:
+            strategy: cursor_pagination
+            cursor:
+                position: body
+                query: meta.next_cursor
+                injection:
+                    position: query_parameters
+                    param_name: cursor
+            per_request_config:
+                interval: 1.0
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: test.gorgias_tags
+        if_exists: replace

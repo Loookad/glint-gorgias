@@ -1,0 +1,185 @@
+description: "Ticket messages data from Gorgias API"
+
+schema:
+    fields:
+        id:
+            type: int64
+        uri:
+            type: string
+        message_id:
+            type: string
+        ticket_id:
+            type: int64
+        external_id:
+            type: string
+            is_nullable: true
+        public:
+            type: bool
+        channel:
+            type: string
+        via:
+            type: string
+        source:
+            type: string
+        sender_id:
+            type: int64
+        sender_email:
+            type: string
+        sender_name:
+            type: string
+        sender_firstname:
+            type: string
+        sender_lastname:
+            type: string
+        sender_meta:
+            type: string
+            is_nullable: true
+        integration_id:
+            type: int64
+            is_nullable: true
+        intents:
+            type: string
+        rule_id:
+            type: int64
+            is_nullable: true
+        from_agent:
+            type: bool
+        receiver_id:
+            type: int64
+            is_nullable: true
+        receiver_email:
+            type: string
+            is_nullable: true
+        receiver_name:
+            type: string
+            is_nullable: true
+        receiver_firstname:
+            type: string
+            is_nullable: true
+        receiver_lastname:
+            type: string
+            is_nullable: true
+        receiver_meta:
+            type: string
+            is_nullable: true
+        subject:
+            type: string
+        body_text:
+            type: string
+            is_nullable: true
+        body_html:
+            type: string
+            is_nullable: true
+        stripped_text:
+            type: string
+            is_nullable: true
+        stripped_html:
+            type: string
+            is_nullable: true
+        stripped_signature:
+            type: string
+            is_nullable: true
+        headers:
+            type: string
+            is_nullable: true
+        attachments:
+            type: string
+            is_nullable: true
+        actions:
+            type: string
+        macros:
+            type: string
+        meta:
+            type: string
+            is_nullable: true
+        created_datetime:
+            type: string
+        sent_datetime:
+            type: string
+            is_nullable: true
+        failed_datetime:
+            type: string
+            is_nullable: true
+        deleted_datetime:
+            type: string
+            is_nullable: true
+        opened_datetime:
+            type: string
+            is_nullable: true
+        last_sending_error:
+            type: string
+            is_nullable: true
+        is_retriable:
+            type: bool
+
+from_api:
+    location: gorgias_training
+    api:
+        request:
+            path: messages
+            query_params:
+                limit: 100
+                order_by: created_datetime:desc
+        response:
+            query: >-
+                data[].{
+                id: id,
+                uri: uri,
+                message_id: message_id,
+                ticket_id: ticket_id,
+                external_id: external_id,
+                public: public,
+                channel: channel,
+                via: via,
+                source: source,
+                sender_id: sender.id,
+                sender_email: sender.email,
+                sender_name: sender.name,
+                sender_firstname: sender.firstname,
+                sender_lastname: sender.lastname,
+                sender_meta: sender.meta,
+                integration_id: integration_id,
+                intents: intents,
+                rule_id: rule_id,
+                from_agent: from_agent,
+                receiver_id: receiver.id,
+                receiver_email: receiver.email,
+                receiver_name: receiver.name,
+                receiver_firstname: receiver.firstname,
+                receiver_lastname: receiver.lastname,
+                receiver_meta: receiver.meta,
+                subject: subject,
+                body_text: body_text,
+                body_html: body_html,
+                stripped_text: stripped_text,
+                stripped_html: stripped_html,
+                stripped_signature: stripped_signature,
+                headers: headers,
+                attachments: attachments,
+                actions: actions,
+                macros: macros,
+                meta: meta,
+                created_datetime: created_datetime,
+                sent_datetime: sent_datetime,
+                failed_datetime: failed_datetime,
+                deleted_datetime: deleted_datetime,
+                opened_datetime: opened_datetime,
+                last_sending_error: last_sending_error,
+                is_retriable: is_retriable
+                }
+        pagination:
+            strategy: cursor_pagination
+            cursor:
+                position: body
+                query: meta.next_cursor
+                injection:
+                    position: query_parameters
+                    param_name: cursor
+            per_request_config:
+                interval: 0.5
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: test.gorgias_ticket_messages
+        if_exists: replace
