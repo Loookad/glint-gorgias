@@ -1,0 +1,78 @@
+schema:
+    fields:
+        id:
+            type: string
+
+from_api:
+    location: ${{ env.KLAVIYO_LOCATION }}_klaviyo
+    api:
+        request:
+            path: "/api/profiles?page[size]=100"
+        response:
+            query: |
+                data[].{
+                    id: id,
+                    email: attributes.email,
+                    phone: attributes.phone_number,
+                    first_name: attributes.first_name,
+                    last_name: attributes.last_name,
+                    organization: attributes.organization,
+                    language: attributes.locale,
+                    title: attributes.title,
+                    created: attributes.created,
+                    updated: attributes.updated,
+                    last_event_date: attributes.last_event_date,
+                    address1: attributes.location.address1,
+                    address2: attributes.location.address2,
+                    city: attributes.location.city,
+                    country: attributes.location.country,
+                    region: attributes.location.region,
+                    zip: attributes.location.zip,
+                    timezone: attributes.location.timezone,
+                    historic_clv: attributes.predictive_analytics.historic_clv,
+                    predicted_clv: attributes.predictive_analytics.predicted_clv,
+                    total_clv: attributes.predictive_analytics.total_clv,
+                    historic_number_of_orders: attributes.predictive_analytics.historic_number_of_orders,
+                    predicted_number_of_orders: attributes.predictive_analytics.predicted_number_of_orders,
+                    average_days_between_orders: attributes.predictive_analytics.average_days_between_orders,
+                    average_order_value: attributes.predictive_analytics.average_order_value,
+                    churn_probability: attributes.predictive_analytics.churn_probability,
+                    expected_date_of_next_order: attributes.predictive_analytics.expected_date_of_next_order,
+                    can_receive_email_marketing: attributes.subscriptions.email.marketing.can_receive_email_marketing,
+                    email_consent: attributes.subscriptions.email.marketing.consent,
+                    email_consent_timestamp: attributes.subscriptions.email.marketing.consent_timestamp,
+                    email_last_updated: attributes.subscriptions.email.marketing.last_updated,
+                    email_method: attributes.subscriptions.email.marketing.method,
+                    email_method_detail: attributes.subscriptions.email.marketing.method_detail,
+                    email_custom_method_detail: attributes.subscriptions.email.marketing.custom_method_detail,
+                    can_receive_sms_marketing: attributes.subscriptions.sms.marketing.can_receive_sms_marketing,
+                    sms_consent: attributes.subscriptions.sms.marketing.consent,
+                    sms_consent_timestamp: attributes.subscriptions.sms.marketing.consent_timestamp,
+                    sms_method: attributes.subscriptions.sms.marketing.method,
+                    sms_method_detail: attributes.subscriptions.sms.marketing.method_detail,
+                    sms_last_updated: attributes.subscriptions.sms.marketing.last_updated,
+                    can_receive_sms_transactional: attributes.subscriptions.sms.transactional.can_receive_sms_transactional,
+                    transactional_sms_consent: attributes.subscriptions.sms.transactional.consent,
+                    transactional_sms_consent_timestamp: attributes.subscriptions.sms.transactional.consent_timestamp,
+                    transactional_sms_method: attributes.subscriptions.sms.transactional.method,
+                    transactional_sms_method_detail: attributes.subscriptions.sms.transactional.method_detail,
+                    transactional_sms_last_updated: attributes.subscriptions.sms.transactional.last_updated,
+                    can_receive_push_marketing: attributes.subscriptions.mobile_push.marketing.can_receive_push_marketing,
+                    push_consent: attributes.subscriptions.mobile_push.marketing.consent,
+                    push_consent_timestamp: attributes.subscriptions.mobile_push.marketing.consent_timestamp
+                    }
+        pagination:
+            cursor:
+                position: body
+                query: links.next
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                global_timeout: 900
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.KLAVIYO_LOCATION }}_klaviyo.profiles
+        if_exists: replace

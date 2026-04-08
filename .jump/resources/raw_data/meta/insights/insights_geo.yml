@@ -1,0 +1,243 @@
+description: |
+    Resource that maps the api Meta Ad Insights.
+    Geo stands for geographic as the data is extracted with country and region dimensions.
+
+metadata:
+    documentation: https://developers.facebook.com/docs/marketing-api/reference/adgroup/insights/
+
+schema:
+    fields:
+        partition_date:
+            type: date32
+            is_partition_key: true
+        kelpie_date:
+            type: date32
+        meta_account:
+            type: string
+        account_id:
+            type: string
+        account_currency:
+            type: string
+        campaign_id:
+            type: string
+        campaign_name:
+            type: string
+        optimization_goal:
+            type: string
+        ad_id:
+            type: string
+        ad_name:
+            type: string
+        spend:
+            type: double
+        impressions:
+            type: int64
+        clicks:
+            type: int64
+        outbound_clicks:
+            type: int64
+        unique_clicks:
+            type: double
+        unique_outbound_clicks:
+            type: double
+        reach:
+            type: double
+        frequency:
+            type: double
+        purchases:
+            type: double
+        add_to_carts:
+            type: double
+        link_clicks:
+            type: double
+        country:
+            type: string
+        region:
+            type: string
+
+from_api:
+    location: ${{ env.META_LOCATION_1 }}
+    description: Meta Marketing API for advertising spend metrics
+    api:
+        request:
+            path: /v24.0/act_${{ env.META_ACCOUNT_1 }}/insights
+            query_params:
+                time_range: |
+                    {"since":"${{ param.from_date }}","until":"${{ param.to_date }}"}
+                time_increment: 1
+                fields: >
+                    account_id,
+                    account_currency,
+                    campaign_name,
+                    campaign_id,
+                    optimization_goal,
+                    ad_id,
+                    ad_name,
+                    spend,
+                    impressions,
+                    clicks,
+                    outbound_clicks,
+                    unique_clicks,
+                    unique_outbound_clicks,
+                    reach,
+                    frequency,
+                    actions,
+                    action_values
+                action_breakdowns: action_type
+                breakdowns: region, country
+                level: ad
+                limit: ${{ env.META_LIMIT_1 }}
+        pagination:
+            strategy: cursor_pagination
+            cursor:
+                position: body
+                query: paging.cursors.after
+                injection:
+                    position: query_parameters
+                    param_name: after
+        response:
+            query: |
+                (([data, @][?type(@) == 'array'])[0])[].{
+                    partition_date: date_start,
+                    kelpie_date: date_stop,
+                    account_id: account_id,
+                    account_currency: account_currency, 
+                    campaign_name: campaign_name,
+                    campaign_id: campaign_id,
+                    ad_name: ad_name,
+                    ad_id: ad_id,
+                    optimization_goal: optimization_goal,
+                    spend: spend,
+                    impressions: impressions,
+                    clicks: clicks,
+                    outbound_clicks: outbound_clicks[?action_type=='outbound_click'].value | [0],
+                    unique_clicks: unique_clicks,
+                    unique_outbound_clicks: unique_outbound_clicks[?action_type=='outbound_click'].value | [0],
+                    reach: reach,
+                    frequency: frequency,
+                    purchases: actions[?action_type=='omni_purchase'].value | [0],
+                    add_to_carts: actions[?action_type=='omni_add_to_cart'].value | [0],
+                    link_clicks: actions[?action_type=='link_click'].value | [0],
+                    region: region,
+                    country: country
+                }
+
+from_api_second:
+    location: ${{ env.META_LOCATION_2 }}
+    description: Meta Marketing API for advertising spend metrics
+    api:
+        request:
+            path: /v24.0/act_${{ env.META_ACCOUNT_2 }}/insights
+            query_params:
+                time_range: |
+                    {"since":"${{ param.from_date }}","until":"${{ param.to_date }}"}
+                time_increment: 1
+                fields: >
+                    account_id,
+                    account_currency,
+                    campaign_name,
+                    campaign_id,
+                    optimization_goal,
+                    ad_id,
+                    ad_name,
+                    spend,
+                    impressions,
+                    clicks,
+                    outbound_clicks,
+                    unique_clicks,
+                    unique_outbound_clicks,
+                    reach,
+                    frequency,
+                    actions,
+                    action_values
+                action_breakdowns: action_type
+                breakdowns: region, country
+                level: ad
+                limit: ${{ env.META_LIMIT_2 }}
+        pagination:
+            strategy: cursor_pagination
+            cursor:
+                position: body
+                query: paging.cursors.after
+                injection:
+                    position: query_parameters
+                    param_name: after
+        response:
+            query: |
+                (([data, @][?type(@) == 'array'])[0])[].{
+                    partition_date: date_start,
+                    kelpie_date: date_stop,
+                    account_id: account_id,
+                    account_currency: account_currency, 
+                    campaign_name: campaign_name,
+                    campaign_id: campaign_id,
+                    ad_name: ad_name,
+                    ad_id: ad_id,
+                    optimization_goal: optimization_goal,
+                    spend: spend,
+                    impressions: impressions,
+                    clicks: clicks,
+                    outbound_clicks: outbound_clicks[?action_type=='outbound_click'].value | [0],
+                    unique_clicks: unique_clicks,
+                    unique_outbound_clicks: unique_outbound_clicks[?action_type=='outbound_click'].value | [0],
+                    reach: reach,
+                    frequency: frequency,
+                    purchases: actions[?action_type=='omni_purchase'].value | [0],
+                    add_to_carts: actions[?action_type=='omni_add_to_cart'].value | [0],
+                    link_clicks: actions[?action_type=='link_click'].value | [0],
+                    region: region,
+                    country: country
+                }
+
+# This variant uses "merge_with_side_table:" operation to merge the new data with the table already existing on BigQuery.
+# When running the itinerary for the first time, or when the table on BigQuery is empty, comment all lines starting from "merge_with_side_table:" and use instead "replace".
+# After the first data uploaded to the table, return to using "merge_with_side_table:".
+# Documentation on writing to a database: https://jump.hiop.io/docs/reference/core/resource/connectors/sql/#write-data-to-a-database
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.WORKSPACE }}_meta.insights_geo
+        if_exists:
+            merge_with_side_table:
+                side_table: ${{ env.WORKSPACE }}_meta.insights_geo_tmp_upsert
+                query: |
+                    MERGE `${{ env.WORKSPACE }}_meta.insights_geo` sp
+                    USING `${{ env.WORKSPACE }}_meta.insights_geo_tmp_upsert` tmp
+                    ON sp.ad_id = tmp.ad_id AND sp.kelpie_date = tmp.kelpie_date AND sp.region = tmp.region AND sp.country = tmp.country AND sp.account_id = tmp.account_id
+                    WHEN MATCHED THEN
+                    UPDATE SET
+                        partition_date = tmp.partition_date,
+                        kelpie_date = tmp.kelpie_date,
+                        account_id = tmp.account_id,
+                        meta_account = tmp.meta_account,
+                        account_currency = tmp.account_currency, 
+                        campaign_id = tmp.campaign_id,
+                        campaign_name = tmp.campaign_name,
+                        optimization_goal = tmp.optimization_goal,
+                        ad_id = tmp.ad_id,
+                        ad_name = tmp.ad_name,
+                        spend = tmp.spend,
+                        impressions = tmp.impressions,
+                        clicks = tmp.clicks,
+                        outbound_clicks = tmp.outbound_clicks,
+                        unique_clicks = tmp.unique_clicks,
+                        unique_outbound_clicks = tmp.unique_outbound_clicks,
+                        reach = tmp.reach,
+                        frequency = tmp.frequency,
+                        purchases = tmp.purchases,
+                        add_to_carts = tmp.add_to_carts,
+                        link_clicks = tmp.link_clicks,
+                        region = tmp.region,
+                        country = tmp.country
+                    WHEN NOT MATCHED THEN
+                    INSERT (
+                        partition_date,kelpie_date,campaign_id,account_id,meta_account,account_currency,campaign_name,optimization_goal,ad_id,ad_name,
+                        spend,impressions,clicks,outbound_clicks,unique_clicks,unique_outbound_clicks,reach,
+                        frequency,purchases,add_to_carts,link_clicks,region,country
+                    )
+                    VALUES (
+                        tmp.partition_date,tmp.kelpie_date,tmp.campaign_id,tmp.account_id,tmp.meta_account,tmp.account_currency,tmp.campaign_name,tmp.optimization_goal,tmp.ad_id,
+                        tmp.ad_name,tmp.spend,tmp.impressions,tmp.clicks,tmp.outbound_clicks,tmp.unique_clicks,
+                        tmp.unique_outbound_clicks,tmp.reach,tmp.frequency,tmp.purchases,tmp.add_to_carts,
+                        tmp.link_clicks,tmp.region,tmp.country
+                    );

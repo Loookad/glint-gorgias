@@ -1,0 +1,86 @@
+schedules:
+    timezone: Europe/Rome
+    fixed:
+        cron: "${{ env.SHOPIFY_CRON }}"
+
+partitions:
+    temporal:
+        start_date: "${{ env.SHOPIFY_START_DATE }}"
+        time_unit: daily
+
+
+satellite:
+    tier: small
+    communication:
+        timeout: 900
+
+
+inputs:
+    raw_data/shopify/customers:
+        from_api:
+            params:
+                created_at_min: "{{ (datetime.strptime(run.yesterday, '%Y-%m-%d') - timedelta(hours=1)).isoformat() }}"
+                created_at_max: "{{ (datetime.strptime(run.today, '%Y-%m-%d') + timedelta(hours=2)).isoformat() }}"
+            allow_empty: true
+        from_api_second:
+            params:
+                created_at_min: "{{ (datetime.strptime(run.yesterday, '%Y-%m-%d') - timedelta(hours=1)).isoformat() }}"
+                created_at_max: "{{ (datetime.strptime(run.today, '%Y-%m-%d') + timedelta(hours=2)).isoformat() }}"
+            allow_empty: true
+compute:
+    steps:
+        - union_all: 
+            sql: 
+                query: |
+                    SELECT 
+                        '${{ env.SHOPIFY_LOCATION_1 }}' AS shopify_account,
+                        id,
+                        email,
+                        created_at,
+                        updated_at,
+                        first_name,
+                        last_name,
+                        state,
+                        orders_count,
+                        total_spent,
+                        last_order_id,
+                        note,
+                        CAST(verified_email AS BOOLEAN) AS verified_email,
+                        multipass_identifier,
+                        CAST(tax_exempt AS BOOLEAN) AS tax_exempt,
+                        tags,
+                        last_order_name,
+                        currency,
+                        phone,
+                        accepted_mktg
+                    FROM "raw_data/shopify/customers:from_api"
+                    UNION ALL
+                    SELECT 
+                        '${{ env.SHOPIFY_LOCATION_2 }}' AS shopify_account,
+                        id,
+                        email,
+                        created_at,
+                        updated_at,
+                        first_name,
+                        last_name,
+                        state,
+                        CAST(orders_count AS BIGINT) AS orders_count,
+                        orders_count
+                        total_spent,
+                        last_order_id,
+                        note,
+                        CAST(verified_email AS BOOLEAN) AS verified_email,
+                        multipass_identifier,
+                        CAST(tax_exempt AS BOOLEAN) AS tax_exempt,
+                        tags,
+                        last_order_name,
+                        currency,
+                        phone,
+                        accepted_mktg
+                    FROM "raw_data/shopify/customers:from_api_second"
+
+outputs:
+    raw_data/shopify/customers:
+        to_bq:
+            validation: true
+            allow_empty: true

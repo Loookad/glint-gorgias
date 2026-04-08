@@ -1,3 +1,4 @@
+version: 0
 organization: glint
-workspace: GorgiasSetup
+workspace: ${{ env.WORKSPACE }}
 git: false

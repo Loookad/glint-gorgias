@@ -1,0 +1,69 @@
+metadata:
+    documentation: https://developers.google.com/google-ads/api/fields/v22/campaign
+
+schema:
+    fields:
+        account.id:
+            type: string
+        segments.date:
+            type: date32
+        campaign.id:
+            type: string
+        campaign.name:
+            type: string
+        ad_group_ad.ad.id:
+            type: string
+        ad_group_ad.ad.name:
+            type: string
+        metrics.cost_micros:
+            type: int64
+        metrics.impressions:
+            type: int64
+        metrics.conversions:
+            type: double
+        metrics.clicks:
+            type: int64
+
+from_lambda:
+    location: google_ads
+    aws_lambda:
+        payload:
+            tenant: glint
+            customer_id: ${{ env.GADS_ACCOUNT_1 }}
+            query: |
+                SELECT
+                    campaign.id,
+                    campaign.name,
+                    ad_group_ad.ad.id,
+                    ad_group_ad.ad.name,
+                    metrics.cost_micros,
+                    metrics.impressions,
+                    metrics.conversions,
+                    metrics.clicks,
+                    segments.date
+                FROM
+                    ad_group_ad
+                WHERE
+                    segments.date BETWEEN "${{ param.from_date }}" AND "${{ param.to_date }}" ${{ env.EMPTY_RESPONSE_GADS_CALL_1 }}
+
+from_lambda_second:
+    location: google_ads
+    aws_lambda:
+        payload:
+            tenant: glint
+            customer_id: ${{ env.GADS_ACCOUNT_2 }}
+            query: |
+                SELECT
+                    campaign.id,
+                    campaign.name,
+                    ad_group_ad.ad.id,
+                    ad_group_ad.ad.name,
+                    metrics.cost_micros,
+                    metrics.impressions,
+                    metrics.conversions,
+                    metrics.clicks,
+                    segments.date
+                FROM
+                    ad_group_ad
+                WHERE
+                    segments.date BETWEEN "${{ param.from_date }}" AND "${{ param.to_date }}" ${{ env.EMPTY_RESPONSE_GADS_CALL_2 }}

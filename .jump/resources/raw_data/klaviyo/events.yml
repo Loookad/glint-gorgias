@@ -1,0 +1,64 @@
+schema:
+    fields:
+        id:
+            type: string
+
+from_api:
+    location: ${{ env.KLAVIYO_LOCATION }}_klaviyo
+    api:
+        request:
+            path: "/api/events?page[size]=200"
+        response:
+            query: |
+               data[].{
+                    event_id: data[0].id,
+                    event_type: data[0].type,
+                    event_timestamp: data[0].attributes.timestamp,
+                    event_datetime: data[0].attributes.datetime,
+                    event_uuid: data[0].attributes.uuid,
+                    metric_id: data[0].relationships.metric.data.id,
+                    profile_id: data[0].relationships.profile.data.id,
+                    attribution_id: data[0].relationships.attributions.data[0].id,
+
+                    metric_name: included[?type=='metric'] | [0].attributes.name,
+                    metric_created: included[?type=='metric'] | [0].attributes.created,
+                    metric_updated: included[?type=='metric'] | [0].attributes.updated,
+
+                    profile_email: included[?type=='profile'] | [0].attributes.email,
+                    profile_phone: included[?type=='profile'] | [0].attributes.phone_number,
+                    profile_first_name: included[?type=='profile'] | [0].attributes.first_name,
+                    profile_last_name: included[?type=='profile'] | [0].attributes.last_name,
+                    profile_organization: included[?type=='profile'] | [0].attributes.organization,
+                    profile_locale: included[?type=='profile'] | [0].attributes.locale,
+                    profile_title: included[?type=='profile'] | [0].attributes.title,
+                    profile_created: included[?type=='profile'] | [0].attributes.created,
+                    profile_updated: included[?type=='profile'] | [0].attributes.updated,
+                    profile_timezone: included[?type=='profile'] | [0].attributes.location.timezone,
+                    profile_country: included[?type=='profile'] | [0].attributes.location.country,
+                    profile_city: included[?type=='profile'] | [0].attributes.location.city,
+                    profile_zip: included[?type=='profile'] | [0].attributes.location.zip,
+                    profile_region: included[?type=='profile'] | [0].attributes.location.region,
+                    profile_ip: included[?type=='profile'] | [0].attributes.location.ip,
+                    profile_pseudonym: included[?type=='profile'] | [0].attributes.properties.pseudonym,
+
+                    campaign_id: included[?type=='attribution'] | [0].relationships.campaign.data.id,
+                    campaign_message_id: included[?type=='attribution'] | [0].relationships."campaign-message".data.id,
+                    flow_id: included[?type=='attribution'] | [0].relationships.flow.data.id,
+                    flow_message_id: included[?type=='attribution'] | [0].relationships."flow-message".data.id,
+                    flow_variation_id: included[?type=='attribution'] | [0].relationships."flow-message-variation".data.id
+                    }
+        pagination:
+            cursor:
+                position: body
+                query: links.next
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                global_timeout: 900
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.KLAVIYO_LOCATION }}_klaviyo.events
+        if_exists: replace

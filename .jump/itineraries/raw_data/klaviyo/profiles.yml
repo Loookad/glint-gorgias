@@ -1,0 +1,26 @@
+schedules:
+    timezone: Europe/Rome
+    fixed:
+        cron: "${{ env.KLAVIYO_CRON }}"
+
+partitions:
+    temporal:
+        start_date: "${{ env.KLAVIYO_START_DATE }}"
+        time_unit: daily
+
+satellite:
+    tier: small
+    communication:
+        timeout: 900
+
+
+inputs:
+    raw_data/klaviyo/profiles:
+        from_api:
+            validation: false
+
+outputs:
+    raw_data/klaviyo/profiles:
+        to_bq:
+            validation: false
+            allow_empty: true

@@ -1,0 +1,52 @@
+description: |
+
+schema:
+    fields:
+        account.id:
+            type: string
+        segments.date:
+            type: date32
+        campaign.id:
+            type: string
+        campaign.name:
+            type: string
+        segments.geo_target_state:
+            type: string
+        segments.geo_target_region:
+            type: string
+
+from_lambda:
+    location: google_ads
+    aws_lambda:
+        payload:
+            tenant: glint
+            customer_id: ${{ env.GADS_ACCOUNT_1 }}
+            query: |
+                SELECT
+                    campaign.id,
+                    campaign.name,
+                    segments.date,
+                    segments.geo_target_state,
+                    segments.geo_target_region
+                FROM
+                    geographic_view
+                WHERE
+                    segments.date BETWEEN "${{ param.from_date }}" AND "${{ param.to_date }}" ${{ env.EMPTY_RESPONSE_GADS_CALL_1 }}
+
+from_lambda_second:
+    location: google_ads
+    aws_lambda:
+        payload:
+            tenant: glint
+            customer_id: ${{ env.GADS_ACCOUNT_2 }}
+            query: |
+                SELECT
+                    campaign.id,
+                    campaign.name,
+                    segments.date,
+                    segments.geo_target_state,
+                    segments.geo_target_region
+                FROM
+                    geographic_view
+                WHERE
+                    segments.date BETWEEN "${{ param.from_date }}" AND "${{ param.to_date }}" ${{ env.EMPTY_RESPONSE_GADS_CALL_2 }}

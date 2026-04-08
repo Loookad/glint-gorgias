@@ -1,0 +1,42 @@
+schema:
+    fields:
+        id:
+            type: string
+
+from_api:
+    location: ${{ env.KLAVIYO_LOCATION }}_klaviyo
+    api:
+        request:
+            path: "/api/lists?page[size]=10"
+        response:
+            query: |
+                 data[].{
+                    list_id: id,
+                    list_type: type,
+                    list_name: attributes.name,
+                    list_created: attributes.created,
+                    list_updated: attributes.updated,
+                    list_opt_in_process: attributes.opt_in_process,
+                    tag_id: relationships.tags.data[0].id,
+                    tag_name: included[?type=='tag'] | [0].attributes.name,
+                    flow_id: relationships."flow-triggers".data[0].id,
+                    flow_name: included[?type=='flow'] | [0].attributes.name,
+                    flow_status: included[?type=='flow'] | [0].attributes.status,
+                    flow_archived: included[?type=='flow'] | [0].attributes.archived,
+                    flow_created: included[?type=='flow'] | [0].attributes.created,
+                    flow_updated: included[?type=='flow'] | [0].attributes.updated,
+                    flow_trigger_type: included[?type=='flow'] | [0].attributes.trigger_type
+                    }
+        pagination:
+            cursor:
+                position: body
+                query: links.next
+                injection:
+                    position: path
+            strategy: cursor_pagination
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.KLAVIYO_LOCATION }}_klaviyo.lists
+        if_exists: replace

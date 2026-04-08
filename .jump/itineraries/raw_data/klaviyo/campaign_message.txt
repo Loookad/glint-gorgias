@@ -1,0 +1,28 @@
+#necessita di ID campaign specifico
+
+schedules:
+    timezone: Europe/Rome
+    fixed:
+        cron: "00 2 * * *"
+
+partitions:
+    temporal:
+        start_date: "2025-06-19"
+        time_unit: daily
+
+satellite:
+    tier: small
+    communication:
+        timeout: 900
+
+
+inputs:
+    raw_data/klaviyo/campaign_message:
+        from_api:
+            validation: true
+
+outputs:
+    raw_data/klaviyo/campaign_message:
+        to_bq:
+            validation: true
+            allow_empty: true

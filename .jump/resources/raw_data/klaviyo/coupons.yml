@@ -1,0 +1,32 @@
+schema:
+    fields:
+        id:
+            type: string
+
+from_api:
+    location: ${{ env.KLAVIYO_LOCATION }}_klaviyo
+    api:
+        request:
+            path: "/api/coupons"
+        response:
+            query: |
+               data[].{
+                    coupon_id: id,
+                    coupon_type: type,
+                    external_id: attributes.external_id,
+                    description: attributes.description,
+                    self_link: links.self
+                    }
+        pagination:
+            cursor:
+                position: body
+                query: links.next
+                injection:
+                    position: path
+            strategy: cursor_pagination
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.KLAVIYO_LOCATION }}_klaviyo.coupons
+        if_exists: replace

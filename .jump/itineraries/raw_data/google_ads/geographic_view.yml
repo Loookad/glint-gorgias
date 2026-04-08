@@ -1,0 +1,57 @@
+schedules:
+    timezone: Europe/Rome
+    fixed:
+        cron: "${{ env.GADS_CRON }}"
+
+partitions:
+    temporal:
+        start_date: "${{ env.GADS_START_DATE }}"
+        time_unit: daily
+
+inputs:
+    raw_data/google_ads/raw/geographic_view:
+        from_lambda:
+            params:
+                from_date: "{{ run.yesterday }}"
+                to_date: "{{ run.yesterday }}"
+            validation:
+                extra_columns:
+                    schema: add
+            allow_empty: true
+        from_lambda_second:
+            params:
+                from_date: "{{ run.yesterday }}"
+                to_date: "{{ run.yesterday }}"
+            validation:
+                extra_columns:
+                    schema: add
+            allow_empty: true
+
+compute:
+    steps:
+        - union_all:
+              sql:
+                  query: |
+                      SELECT 
+                      '${{ env.GADS_ACCOUNT_1 }}' AS gads_account,
+                      COALESCE("campaign.id", NULL) AS campaign_id,
+                      COALESCE("campaign.name", NULL) AS campaign_name,
+                      COALESCE("segments.date", NULL) AS segments_date,
+                      COALESCE("segments.geo_target_state", NULL) AS segments_geo_target_state,
+                      COALESCE("segments.geo_target_region", NULL) AS segments_geo_target_region
+                      FROM "raw_data/google_ads/raw/geographic_view:from_lambda"
+                      UNION ALL
+                      SELECT 
+                      '${{ env.GADS_ACCOUNT_2 }}' AS gads_account,
+                      COALESCE("campaign.id", NULL) AS campaign_id,
+                      COALESCE("campaign.name", NULL) AS campaign_name,
+                      COALESCE("segments.date", NULL) AS segments_date,
+                      COALESCE("segments.geo_target_state", NULL) AS segments_geo_target_state,
+                      COALESCE("segments.geo_target_region", NULL) AS segments_geo_target_region
+                      FROM "raw_data/google_ads/raw/geographic_view:from_lambda_second"
+
+outputs:
+    raw_data/google_ads/geographic_view:
+        to_bq:
+            validation: true
+            allow_empty: true

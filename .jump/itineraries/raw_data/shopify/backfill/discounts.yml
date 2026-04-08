@@ -1,0 +1,224 @@
+partitions:
+    temporal:
+        start_date: "${{ env.SHOPIFY_START_DATE }}"
+        time_unit: "monthly"
+
+
+satellite:
+    tier: small
+    communication:
+        timeout: 900
+
+
+inputs:
+    raw_data/shopify/discount_allocations:
+        from_api:
+            params:
+                created_at_min: "{{ (datetime.strptime(run.one_month_ago, '%Y-%m-%d') - timedelta(hours=1)).isoformat() }}"
+                created_at_max: "{{ (datetime.strptime(run.today, '%Y-%m-%d') + timedelta(hours=2)).isoformat() }}"
+            allow_empty: true
+        from_api_second:
+            params:
+                created_at_min: "{{ (datetime.strptime(run.one_month_ago, '%Y-%m-%d') - timedelta(hours=1)).isoformat() }}"
+                created_at_max: "{{ (datetime.strptime(run.today, '%Y-%m-%d') + timedelta(hours=2)).isoformat() }}"
+            allow_empty: true
+
+
+compute:
+    steps:
+        - get_items:
+            jq:
+                orient: list
+                table: "raw_data/shopify/discount_allocations:from_api"
+                query: |
+                    . as $data
+                            | (
+                                [ range(0; ($data.order_number | length)) as $i
+                                  | $data.order_number[$i] as $order_number
+                                  | $data.created_at[$i]    as $created_at
+                                  | $data.id[$i]            as $order_id
+                                  | ($data.line_items[$i] // [])[]?          
+                                  | {
+                                      order_number: $order_number,
+                                      created_at:   $created_at,
+                                      order_id:     $order_id,               
+                                      line_item_id: .id,
+                                      discount_allocations: (.discount_allocations // [])  
+                                    }
+                                ]
+                              ) as $rows
+                            | if ($rows | length) > 0 then
+                                $rows
+                              else
+                                [{
+                                  order_number: null,
+                                  created_at:   null,
+                                  order_id:     null,
+                                  line_item_id: null,
+                                  discount_allocations: [],
+                                  __dummy: true
+                                }]
+                              end
+        - get_discount_allocations: # note that if discount_allocations is [] for a certain line item the query will not return it, not a problem if you left join from orders
+            jq:
+                orient: list
+                table: "steps:get_items"
+                query: |
+                    . as $data
+                            | (
+                                [ range(0; ($data.order_number | length)) as $i
+                                  | $data.order_number[$i] as $order_number
+                                  | $data.order_id[$i]     as $order_id        # <— use order_id from step 1
+                                  | $data.created_at[$i]   as $created_at
+                                  | $data.line_item_id[$i] as $line_item_id
+                                  | ($data.discount_allocations[$i] // [])[]    # null-safe explode
+                                  | {
+                                      order_id:  $order_id,
+                                      order_number: $order_number,
+                                      order_created_at: $created_at,
+                                      line_item_id: $line_item_id,
+                                      discount_amount: .amount,
+                                      discount_shop_money_amount: .amount_set.shop_money.amount,
+                                      discount_shop_money_currency_code: .amount_set.shop_money.currency_code,
+                                      discount_presentment_money_amount: .amount_set.presentment_money.amount,
+                                      discount_presentment_money_currency_code: .amount_set.presentment_money.currency_code,
+                                      discount_application_index: .discount_application_index,
+                                      __dummy: false
+                                    }
+                                ]
+                              ) as $out
+                            | if ($out | length) > 0 then
+                                $out
+                              else
+                                [{
+                                  order_id: null,
+                                  order_number: null,
+                                  order_created_at: null,
+                                  line_item_id: null,
+                                  discount_amount: null,
+                                  discount_shop_money_amount: null,
+                                  discount_shop_money_currency_code: null,
+                                  discount_presentment_money_amount: null,
+                                  discount_presentment_money_currency_code: null,
+                                  discount_application_index: null,
+                                  __dummy: true
+                                }]
+                              end
+        - get_items_second:
+            jq:
+                orient: list
+                table: "raw_data/shopify/discount_allocations:from_api_second"
+                query: |
+                    . as $data
+                            | (
+                                [ range(0; ($data.order_number | length)) as $i
+                                  | $data.order_number[$i] as $order_number
+                                  | $data.created_at[$i]    as $created_at
+                                  | $data.id[$i]            as $order_id
+                                  | ($data.line_items[$i] // [])[]?          # null-safe explode
+                                  | {
+                                      order_number: $order_number,
+                                      created_at:   $created_at,
+                                      order_id:     $order_id,               # <— added
+                                      line_item_id: .id,
+                                      discount_allocations: (.discount_allocations // [])  # ensure array
+                                    }
+                                ]
+                              ) as $rows
+                            | if ($rows | length) > 0 then
+                                $rows
+                              else
+                                [{
+                                  order_number: null,
+                                  created_at:   null,
+                                  order_id:     null,
+                                  line_item_id: null,
+                                  discount_allocations: [],
+                                  __dummy: true
+                                }]
+                              end
+        - get_discount_allocations_second: # note that if discount_allocations is [] for a certain line item the query will not return it, not a problem if you left join from orders
+            jq:
+                orient: list
+                table: "steps:get_items_second"
+                query: |
+                    . as $data
+                            | (
+                                [ range(0; ($data.order_number | length)) as $i
+                                  | $data.order_number[$i] as $order_number
+                                  | $data.order_id[$i]     as $order_id        # <— use order_id from step 1
+                                  | $data.created_at[$i]   as $created_at
+                                  | $data.line_item_id[$i] as $line_item_id
+                                  | ($data.discount_allocations[$i] // [])[]    # null-safe explode
+                                  | {
+                                      order_id:  $order_id,
+                                      order_number: $order_number,
+                                      order_created_at: $created_at,
+                                      line_item_id: $line_item_id,
+                                      discount_amount: .amount,
+                                      discount_shop_money_amount: .amount_set.shop_money.amount,
+                                      discount_shop_money_currency_code: .amount_set.shop_money.currency_code,
+                                      discount_presentment_money_amount: .amount_set.presentment_money.amount,
+                                      discount_presentment_money_currency_code: .amount_set.presentment_money.currency_code,
+                                      discount_application_index: .discount_application_index,
+                                      __dummy: false
+                                    }
+                                ]
+                              ) as $out
+                            | if ($out | length) > 0 then
+                                $out
+                              else
+                                [{
+                                  order_id: null,
+                                  order_number: null,
+                                  order_created_at: null,
+                                  line_item_id: null,
+                                  discount_amount: null,
+                                  discount_shop_money_amount: null,
+                                  discount_shop_money_currency_code: null,
+                                  discount_presentment_money_amount: null,
+                                  discount_presentment_money_currency_code: null,
+                                  discount_application_index: null,
+                                  __dummy: true
+                                }]
+                              end
+
+        - union_all:
+            sql: 
+                query: |
+                    SELECT
+                        '${{ env.SHOPIFY_LOCATION_1 }}' AS shopify_account,
+                        order_created_at,
+                        order_number,
+                        order_id,
+                        line_item_id,
+                        discount_amount,
+                        discount_shop_money_amount,
+                        discount_shop_money_currency_code,
+                        discount_presentment_money_amount,
+                        discount_presentment_money_currency_code,
+                        discount_application_index
+                    FROM "steps:get_discount_allocations"
+                    WHERE COALESCE(__dummy, false) = false
+                    UNION ALL
+                    SELECT
+                        '${{ env.SHOPIFY_LOCATION_2 }}' AS shopify_account,
+                        order_created_at,
+                        order_number,
+                        order_id,
+                        line_item_id,
+                        discount_amount,
+                        discount_shop_money_amount,
+                        discount_shop_money_currency_code,
+                        discount_presentment_money_amount,
+                        discount_presentment_money_currency_code,
+                        discount_application_index
+                    FROM "steps:get_discount_allocations_second"
+                    WHERE COALESCE(__dummy, false) = false
+
+
+outputs:
+    raw_data/shopify/discount_allocations:
+        to_bq:
+            validation: true
+            allow_empty: true

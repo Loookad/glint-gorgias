@@ -1,0 +1,46 @@
+#necessita di ID campaign specifico
+
+schema:
+    fields:
+        id:
+            type: string
+
+from_api:
+    location: ${{ env.KLAVIYO_LOCATION }}_klaviyo
+    api:
+        request:
+            path: "/api/campaign-messages"
+        response:
+            query: |
+               data[].{
+                    message_id: data.id,
+                    channel: data.attributes.definition.channel,
+                    label: data.attributes.definition.label,
+                    subject: data.attributes.definition.content.subject,
+                    preview_text: data.attributes.definition.content.preview_text,
+                    from_email: data.attributes.definition.content.from_email,
+                    from_label: data.attributes.definition.content.from_label,
+                    reply_to_email: data.attributes.definition.content.reply_to_email,
+                    cc_email: data.attributes.definition.content.cc_email,
+                    bcc_email: data.attributes.definition.content.bcc_email,
+                    send_datetime: data.attributes.send_times[0].datetime,
+                    send_is_local: data.attributes.send_times[0].is_local,
+                    message_created_at: data.attributes.created_at,
+                    message_updated_at: data.attributes.updated_at,
+                    campaign_id: data.relationships.campaign.data.id,
+                    template_id: data.relationships.template.data.id,
+                    image_id: data.relationships.image.data.id
+                    }
+        pagination:
+            cursor:
+                position: body
+                query: links.next
+                injection:
+                    position: path
+            strategy: cursor_pagination
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.KLAVIYO_LOCATION }}_klaviyo.campaign_message
+        if_exists: replace

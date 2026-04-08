@@ -1,0 +1,58 @@
+partitions:
+    temporal:
+        start_date: "${{ env.SHOPIFY_START_DATE }}"
+        time_unit: "monthly"
+
+satellite:
+    tier: small
+    communication:
+        timeout: 900
+
+inputs:
+    raw_data/shopify/products:
+        from_api:
+            params:
+                created_at_min: "{{ (datetime.strptime(run.one_month_ago, '%Y-%m-%d') - timedelta(hours=1)).isoformat() }}"
+                created_at_max: "{{ (datetime.strptime(run.today, '%Y-%m-%d') + timedelta(hours=2)).isoformat() }}"
+            allow_empty: true
+        from_api_second:
+            params:
+                created_at_min: "{{ (datetime.strptime(run.one_month_ago, '%Y-%m-%d') - timedelta(hours=1)).isoformat() }}"
+                created_at_max: "{{ (datetime.strptime(run.today, '%Y-%m-%d') + timedelta(hours=2)).isoformat() }}"
+            allow_empty: true
+
+compute:
+    steps:
+        - union_all: 
+            sql: 
+                query: |
+                    SELECT 
+                        '${{ env.SHOPIFY_LOCATION_1 }}' AS shopify_account,
+                        created_at,
+                        updated_at,
+                        product_id,
+                        product_type,
+                        title,
+                        status,
+                        tags,
+                        image_source
+                    FROM "raw_data/shopify/products:from_api"
+                    UNION ALL
+                    SELECT 
+                        '${{ env.SHOPIFY_LOCATION_2 }}' AS shopify_account,
+                        created_at,
+                        updated_at,
+                        product_id,
+                        product_type,
+                        title,
+                        status,
+                        tags,
+                        image_source
+                    FROM "raw_data/shopify/products:from_api_second"
+
+
+outputs:
+    raw_data/shopify/products:
+        to_bq:
+            validation: true
+            allow_empty: true

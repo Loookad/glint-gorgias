@@ -1,0 +1,64 @@
+schedules:
+    timezone: Europe/Rome
+    fixed:
+        cron: "${{ env.GADS_CRON }}"
+
+partitions:
+    temporal:
+        start_date: "${{ env.GADS_START_DATE }}"
+        time_unit: daily
+
+inputs:
+    raw_data/google_ads/raw/ad_group_ad:
+        from_lambda:
+            params:
+                from_date: "{{ run.yesterday }}"
+                to_date: "{{ run.yesterday }}"
+            validation:
+                extra_columns:
+                    schema: add
+            allow_empty: true
+        from_lambda_second:
+            params:
+                from_date: "{{ run.yesterday }}"
+                to_date: "{{ run.yesterday }}"
+            validation:
+                extra_columns:
+                    schema: add
+            allow_empty: true
+
+compute:
+    steps:
+        - union_all:
+              sql:
+                  query: |
+                      SELECT 
+                          '${{ env.GADS_ACCOUNT_1 }}' AS gads_account,    
+                          COALESCE("campaign.id", NULL) AS campaign_id,
+                          COALESCE("campaign.name", NULL) AS campaign_name,
+                          COALESCE("ad_group_ad.ad.id", NULL) AS ad_group_ad_ad_id,
+                          COALESCE("ad_group_ad.ad.name", NULL) AS ad_group_ad_ad_name,
+                          COALESCE("metrics.cost_micros", NULL) AS metrics_cost_micros,
+                          COALESCE("metrics.impressions", NULL) AS metrics_impressions,
+                          COALESCE("metrics.conversions", NULL) AS metrics_conversions,
+                          COALESCE("metrics.clicks", NULL) AS metrics_clicks,
+                          COALESCE("segments.date", NULL) AS segments_date
+                      FROM "raw_data/google_ads/raw/ad_group_ad:from_lambda"
+                      UNION ALL
+                        SELECT 
+                          '${{ env.GADS_ACCOUNT_2 }}' AS gads_account, 
+                          COALESCE("campaign.id", NULL) AS campaign_id,
+                          COALESCE("campaign.name", NULL) AS campaign_name,
+                          COALESCE("ad_group_ad.ad.id", NULL) AS ad_group_ad_ad_id,
+                          COALESCE("ad_group_ad.ad.name", NULL) AS ad_group_ad_ad_name,
+                          COALESCE("metrics.cost_micros", NULL) AS metrics_cost_micros,
+                          COALESCE("metrics.impressions", NULL) AS metrics_impressions,
+                          COALESCE("metrics.conversions", NULL) AS metrics_conversions,
+                          COALESCE("metrics.clicks", NULL) AS metrics_clicks,
+                          COALESCE("segments.date", NULL) AS segments_date
+                      FROM "raw_data/google_ads/raw/ad_group_ad:from_lambda_second"
+outputs:
+    raw_data/google_ads/ad_group_ad:
+        to_bq:
+            validation: true
+            allow_empty: true

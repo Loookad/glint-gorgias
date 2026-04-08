@@ -1,0 +1,573 @@
+description: |
+    Resource that maps the api Orders/Order header.
+    It takes only the relevant fields not in arrays.
+
+metadata:
+    documentation: https://shopify.dev/docs/api/admin-rest/2025-07/resources/order#get-orders
+
+schema:
+    fields:
+        shopify_account:
+            type: string
+        order_id:
+            type: string
+        order_name:
+            type: string
+        app_id:
+            type: string
+        order_checkout_id:
+            type: string
+        order_created_at:
+            type: timestamp[s,UTC]
+        order_closed_at:
+            type: timestamp[s,UTC]
+        order_updated_at:
+            type: timestamp[s,UTC]
+        order_currency:
+            type: string
+        landing_site:
+            type: string
+        landing_site_ref:
+            type: string
+        order_number:
+            type: string
+        financial_status:
+            type: string
+        order_processed_at:
+            type: timestamp[s,UTC]
+        order_note:
+            type: string
+        tags:
+            type: string
+        source_name:
+            type: string
+        source_url:
+            type: string
+        total_price:
+            type: double
+        subtotal_price:
+            type: double
+        total_discounts:
+            type: double
+        total_line_items_price:
+            type: double
+        total_tax:
+            type: double
+        total_shipping_price:
+            type: double
+        total_tip_received:
+            type: double
+        discount_code:
+            type: string
+        discount_amount:
+            type: double
+        discount_type:
+            type: string
+        cart_token:
+            type: string
+        order_checkout_token:
+            type: string
+        cancel_reason:
+            type: string
+        cancelled_at:
+            type: timestamp[s,UTC]
+        shipping_country:
+            type: string
+        shipping_country_code:
+            type: string
+        shipping_province:
+            type: string
+        shipping_province_code:
+            type: string
+        shipping_city:
+            type: string
+        shipping_zip:
+            type: string
+        shipping_latitude:
+            type: double
+        shipping_longitude:
+            type: double
+        customer_id:
+            type: string
+        customer_email:
+            type: string
+        mktg_accepted:
+            type: boolean
+        admin_graphql_api_id:
+            type: string
+        browser_ip:
+            type: string
+        confirmation_number:
+            type: string
+        confirmed:
+            type: boolean
+        contact_email:
+            type: string
+        currency:
+            type: string 
+        customer_locale:
+            type: string
+        device_id:
+            type: string
+        duties_included:
+            type: boolean
+        email:
+            type: string
+        estimated_taxes:
+            type: boolean
+        fulfillment_status:
+            type: string
+        location_id:
+            type: string
+        merchant_business_entity_id:
+            type: string
+        merchant_of_record_app_id:
+            type: string
+        number:
+            type: string
+        order_status_url:
+            type: string
+        phone:
+            type: string
+        po_number:
+            type: string
+        presentment_currency:
+            type: string
+        reference:
+            type: string
+        referring_site:
+            type: string
+        source_identifier:
+            type: string
+        tax_exempt:
+            type: boolean
+        taxes_included:
+            type: boolean
+        test:
+            type: boolean
+        token:
+            type: string
+        total_outstanding:
+            type: double
+        total_weight:
+            type: double
+        user_id:
+            type: string
+        current_subtotal_price:
+            type: double
+        current_total_discounts:
+            type: double
+        current_total_price:
+            type: double
+        current_total_tax:
+            type: double
+
+        # Billing address (solo scalari)
+        billing_first_name:
+            type: string
+        billing_last_name:
+            type: string
+        billing_address1:
+            type: string
+        billing_address2:
+            type: string
+        billing_city:
+            type: string
+        billing_zip:
+            type: string
+        billing_province:
+            type: string
+        billing_province_code:
+            type: string
+        billing_country:
+            type: string
+        billing_country_code:
+            type: string
+        billing_phone:
+            type: string
+        billing_latitude:
+            type: double
+        billing_longitude:
+            type: double
+        billing_company:
+            type: string
+        billing_name:
+            type: string
+
+from_api:
+    location: ${{ env.SHOPIFY_LOCATION_1 }}_shopify
+    api:
+        request:
+            path: "/admin/api/2025-07/orders.json?\
+                ${{ env.EMPTY_RESPONSE_SHOPIFY_CALL_1 }}&\
+                created_at_max=${{ param.created_at_max }}&\
+                created_at_min=${{ param.created_at_min }}&\
+                status=any&\
+                limit=250"
+        response:
+            query: |
+                (([orders, @][?type(@) == 'array'])[0])[].{
+                    order_id: id,
+                    admin_graphql_api_id: admin_graphql_api_id,
+                    app_id: app_id,
+                    order_name: name,
+                    order_number: order_number,
+                    number: number,
+                    order_created_at: created_at,
+                    order_closed_at: closed_at,
+                    order_updated_at: updated_at,
+                    order_processed_at: processed_at,
+                    financial_status: financial_status,
+                    fulfillment_status: fulfillment_status,
+                    confirmed: confirmed,
+                    test: test,
+                    cancel_reason: cancel_reason,
+                    cancelled_at: cancelled_at,
+                    mktg_accepted: buyer_accepts_marketing,
+                    tax_exempt: tax_exempt,
+                    taxes_included: taxes_included,
+                    duties_included: duties_included,
+                    estimated_taxes: estimated_taxes,
+                    token: token,
+                    cart_token: cart_token,
+                    order_checkout_id: checkout_id,
+                    order_checkout_token: checkout_token,
+                    confirmation_number: confirmation_number,
+                    reference: reference,
+                    source_identifier: source_identifier,
+                    order_status_url: order_status_url,
+                    source_name: source_name,
+                    source_url: source_url,
+                    landing_site: landing_site,
+                    landing_site_ref: landing_site_ref,
+                    referring_site: referring_site,
+                    browser_ip: browser_ip,
+                    device_id: device_id,
+                    location_id: location_id,
+                    user_id: user_id,
+                    merchant_business_entity_id: merchant_business_entity_id,
+                    merchant_of_record_app_id: merchant_of_record_app_id,
+                    po_number: po_number,
+                    contact_email: contact_email,
+                    email: email,
+                    customer_email: email,
+                    phone: phone,
+                    customer_locale: customer_locale,
+                    order_currency: currency,
+                    currency: currency,
+                    presentment_currency: presentment_currency,
+                    total_price: total_price,
+                    subtotal_price: subtotal_price,
+                    total_discounts: total_discounts,
+                    total_line_items_price: total_line_items_price,
+                    total_tax: total_tax,
+                    total_tip_received: total_tip_received,
+                    total_outstanding: total_outstanding,
+                    total_weight: total_weight,
+                    current_subtotal_price: current_subtotal_price,
+                    current_total_discounts: current_total_discounts,
+                    current_total_price: current_total_price,
+                    current_total_tax: current_total_tax,
+                    total_shipping_price: total_shipping_price_set.shop_money.amount,
+                    discount_code: discount_codes[0].code,
+                    discount_amount: discount_codes[0].amount,
+                    discount_type: discount_codes[0].type,
+                    order_note: note,
+                    tags: tags,
+                    shipping_country: shipping_address.country,
+                    shipping_country_code: shipping_address.country_code,
+                    shipping_province: shipping_address.province,
+                    shipping_province_code: shipping_address.province_code,
+                    shipping_city: shipping_address.city,
+                    shipping_zip: shipping_address.zip,
+                    shipping_latitude: shipping_address.latitude,
+                    shipping_longitude: shipping_address.longitude,
+                    billing_first_name: billing_address.first_name,
+                    billing_last_name: billing_address.last_name,
+                    billing_address1: billing_address.address1,
+                    billing_address2: billing_address.address2,
+                    billing_city: billing_address.city,
+                    billing_zip: billing_address.zip,
+                    billing_province: billing_address.province,
+                    billing_province_code: billing_address.province_code,
+                    billing_country: billing_address.country,
+                    billing_country_code: billing_address.country_code,
+                    billing_phone: billing_address.phone,
+                    billing_latitude: billing_address.latitude,
+                    billing_longitude: billing_address.longitude,
+                    billing_company: billing_address.company,
+                    billing_name: billing_address.name,
+                    customer_id: customer.id
+                }
+        pagination:
+            cursor:
+                position: header
+                key: link
+                regex: |
+                    <([^>]+)>;\s*rel=\"next\"
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                interval: 0.5
+                global_timeout: 900
+
+from_api_second:
+    location: ${{ env.SHOPIFY_LOCATION_2 }}_shopify
+    api:
+        request:
+            path: "/admin/api/2025-07/orders.json?\
+                ${{ env.EMPTY_RESPONSE_SHOPIFY_CALL_2 }}&\
+                created_at_max=${{ param.created_at_max }}&\
+                created_at_min=${{ param.created_at_min }}&\
+                status=any&\
+                limit=250"
+        response:
+            query: |
+                (([orders, @][?type(@) == 'array'])[0])[].{
+                    order_id: id,
+                    admin_graphql_api_id: admin_graphql_api_id,
+                    app_id: app_id,
+                    order_name: name,
+                    order_number: order_number,
+                    number: number,
+                    order_created_at: created_at,
+                    order_closed_at: closed_at,
+                    order_updated_at: updated_at,
+                    order_processed_at: processed_at,
+                    financial_status: financial_status,
+                    fulfillment_status: fulfillment_status,
+                    confirmed: confirmed,
+                    test: test,
+                    cancel_reason: cancel_reason,
+                    cancelled_at: cancelled_at,
+                    mktg_accepted: buyer_accepts_marketing,
+                    tax_exempt: tax_exempt,
+                    taxes_included: taxes_included,
+                    duties_included: duties_included,
+                    estimated_taxes: estimated_taxes,
+                    token: token,
+                    cart_token: cart_token,
+                    order_checkout_id: checkout_id,
+                    order_checkout_token: checkout_token,
+                    confirmation_number: confirmation_number,
+                    reference: reference,
+                    source_identifier: source_identifier,
+                    order_status_url: order_status_url,
+                    source_name: source_name,
+                    source_url: source_url,
+                    landing_site: landing_site,
+                    landing_site_ref: landing_site_ref,
+                    referring_site: referring_site,
+                    browser_ip: browser_ip,
+                    device_id: device_id,
+                    location_id: location_id,
+                    user_id: user_id,
+                    merchant_business_entity_id: merchant_business_entity_id,
+                    merchant_of_record_app_id: merchant_of_record_app_id,
+                    po_number: po_number,
+                    contact_email: contact_email,
+                    email: email,
+                    customer_email: email,
+                    phone: phone,
+                    customer_locale: customer_locale,
+                    order_currency: currency,
+                    currency: currency,
+                    presentment_currency: presentment_currency,
+                    total_price: total_price,
+                    subtotal_price: subtotal_price,
+                    total_discounts: total_discounts,
+                    total_line_items_price: total_line_items_price,
+                    total_tax: total_tax,
+                    total_tip_received: total_tip_received,
+                    total_outstanding: total_outstanding,
+                    total_weight: total_weight,
+                    current_subtotal_price: current_subtotal_price,
+                    current_total_discounts: current_total_discounts,
+                    current_total_price: current_total_price,
+                    current_total_tax: current_total_tax,
+                    total_shipping_price: total_shipping_price_set.shop_money.amount,
+                    discount_code: discount_codes[0].code,
+                    discount_amount: discount_codes[0].amount,
+                    discount_type: discount_codes[0].type,
+                    order_note: note,
+                    tags: tags,
+                    shipping_country: shipping_address.country,
+                    shipping_country_code: shipping_address.country_code,
+                    shipping_province: shipping_address.province,
+                    shipping_province_code: shipping_address.province_code,
+                    shipping_city: shipping_address.city,
+                    shipping_zip: shipping_address.zip,
+                    shipping_latitude: shipping_address.latitude,
+                    shipping_longitude: shipping_address.longitude,
+                    billing_first_name: billing_address.first_name,
+                    billing_last_name: billing_address.last_name,
+                    billing_address1: billing_address.address1,
+                    billing_address2: billing_address.address2,
+                    billing_city: billing_address.city,
+                    billing_zip: billing_address.zip,
+                    billing_province: billing_address.province,
+                    billing_province_code: billing_address.province_code,
+                    billing_country: billing_address.country,
+                    billing_country_code: billing_address.country_code,
+                    billing_phone: billing_address.phone,
+                    billing_latitude: billing_address.latitude,
+                    billing_longitude: billing_address.longitude,
+                    billing_company: billing_address.company,
+                    billing_name: billing_address.name,
+                    customer_id: customer.id
+                }
+        pagination:
+            cursor:
+                position: header
+                key: link
+                regex: |
+                    <([^>]+)>;\s*rel=\"next\"
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                interval: 0.5
+                global_timeout: 900
+
+# This variant uses "merge_with_side_table:" operation to merge the new data with the table already existing on BigQuery. 
+# When running the itinerary for the first time, or when the table on BigQuery is empty, comment all lines starting from "merge_with_side_table:" and use instead "replace". 
+# After the first data uploaded to the table, return to using "merge_with_side_table:".
+# Documentation on writing to a database: https://jump.hiop.io/docs/reference/core/resource/connectors/sql/#write-data-to-a-database
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.WORKSPACE }}_shopify.orders
+        if_exists:
+            merge_with_side_table:
+                side_table: ${{ env.WORKSPACE }}_shopify.orders_tmp_upsert
+                query: |
+                    MERGE `${{ env.WORKSPACE }}_shopify.orders` sp
+                    USING `${{ env.WORKSPACE }}_shopify.orders_tmp_upsert` tmp
+                    ON sp.order_id = tmp.order_id AND sp.shopify_account = tmp.shopify_account
+                    WHEN MATCHED THEN
+                    UPDATE SET
+                        order_name                 = tmp.order_name,
+                        app_id                     = tmp.app_id,
+                        order_checkout_id          = tmp.order_checkout_id,
+                        order_created_at           = tmp.order_created_at,
+                        order_closed_at            = tmp.order_closed_at,
+                        order_updated_at           = tmp.order_updated_at,
+                        order_currency             = tmp.order_currency,
+                        landing_site               = tmp.landing_site,
+                        landing_site_ref           = tmp.landing_site_ref,
+                        order_number               = tmp.order_number,
+                        financial_status           = tmp.financial_status,
+                        order_processed_at         = tmp.order_processed_at,
+                        order_note                 = tmp.order_note,
+                        tags                       = tmp.tags,
+                        source_name                = tmp.source_name,
+                        source_url                 = tmp.source_url,
+                        total_price                = tmp.total_price,
+                        subtotal_price             = tmp.subtotal_price,
+                        total_discounts            = tmp.total_discounts,
+                        total_line_items_price     = tmp.total_line_items_price,
+                        total_tax                  = tmp.total_tax,
+                        total_shipping_price       = tmp.total_shipping_price,
+                        total_tip_received         = tmp.total_tip_received,
+                        discount_code              = tmp.discount_code,
+                        discount_amount            = tmp.discount_amount,
+                        discount_type              = tmp.discount_type,
+                        cart_token                 = tmp.cart_token,
+                        order_checkout_token       = tmp.order_checkout_token,
+                        cancel_reason              = tmp.cancel_reason,
+                        cancelled_at               = tmp.cancelled_at,
+                        shipping_country           = tmp.shipping_country,
+                        shipping_country_code      = tmp.shipping_country_code,
+                        shipping_province          = tmp.shipping_province,
+                        shipping_province_code     = tmp.shipping_province_code,
+                        shipping_city              = tmp.shipping_city,
+                        shipping_zip               = tmp.shipping_zip,
+                        shipping_latitude          = tmp.shipping_latitude,
+                        shipping_longitude         = tmp.shipping_longitude,
+                        customer_id                = tmp.customer_id,
+                        customer_email             = tmp.customer_email,
+                        mktg_accepted              = tmp.mktg_accepted,
+                        admin_graphql_api_id       = tmp.admin_graphql_api_id,
+                        browser_ip                 = tmp.browser_ip,
+                        confirmation_number        = tmp.confirmation_number,
+                        confirmed                  = tmp.confirmed,
+                        contact_email              = tmp.contact_email,
+                        currency                   = tmp.currency,
+                        customer_locale            = tmp.customer_locale,
+                        device_id                  = tmp.device_id,
+                        duties_included            = tmp.duties_included,
+                        email                      = tmp.email,
+                        estimated_taxes            = tmp.estimated_taxes,
+                        fulfillment_status         = tmp.fulfillment_status,
+                        location_id                = tmp.location_id,
+                        merchant_business_entity_id= tmp.merchant_business_entity_id,
+                        merchant_of_record_app_id  = tmp.merchant_of_record_app_id,
+                        number                     = tmp.number,
+                        order_status_url           = tmp.order_status_url,
+                        phone                      = tmp.phone,
+                        po_number                  = tmp.po_number,
+                        presentment_currency       = tmp.presentment_currency,
+                        reference                  = tmp.reference,
+                        referring_site             = tmp.referring_site,
+                        source_identifier          = tmp.source_identifier,
+                        tax_exempt                 = tmp.tax_exempt,
+                        taxes_included             = tmp.taxes_included,
+                        test                       = tmp.test,
+                        token                      = tmp.token,
+                        total_outstanding          = tmp.total_outstanding,
+                        total_weight               = tmp.total_weight,
+                        user_id                    = tmp.user_id,
+                        current_subtotal_price     = tmp.current_subtotal_price,
+                        current_total_discounts    = tmp.current_total_discounts,
+                        current_total_price        = tmp.current_total_price,
+                        current_total_tax          = tmp.current_total_tax,
+                        billing_first_name         = tmp.billing_first_name,
+                        billing_last_name          = tmp.billing_last_name,
+                        billing_address1           = tmp.billing_address1,
+                        billing_address2           = tmp.billing_address2,
+                        billing_city               = tmp.billing_city,
+                        billing_zip                = tmp.billing_zip,
+                        billing_province           = tmp.billing_province,
+                        billing_province_code      = tmp.billing_province_code,
+                        billing_country            = tmp.billing_country,
+                        billing_country_code       = tmp.billing_country_code,
+                        billing_phone              = tmp.billing_phone,
+                        billing_latitude           = tmp.billing_latitude,
+                        billing_longitude          = tmp.billing_longitude,
+                        billing_company            = tmp.billing_company,
+                        billing_name               = tmp.billing_name
+                    WHEN NOT MATCHED THEN
+                    INSERT (
+                        order_id, order_name, app_id, order_checkout_id, order_created_at, order_closed_at, order_updated_at, order_currency,
+                        landing_site, landing_site_ref, order_number, financial_status, order_processed_at, order_note, tags, source_name,
+                        source_url, total_price, subtotal_price, total_discounts, total_line_items_price, total_tax, total_shipping_price,
+                        total_tip_received, discount_code, discount_amount, discount_type, cart_token, order_checkout_token, cancel_reason,
+                        cancelled_at, shipping_country, shipping_country_code, shipping_province, shipping_province_code, shipping_city,
+                        shipping_zip, shipping_latitude, shipping_longitude, customer_id, customer_email, mktg_accepted,
+                        admin_graphql_api_id, browser_ip, confirmation_number, confirmed, contact_email, currency, customer_locale, device_id,
+                        duties_included, email, estimated_taxes, fulfillment_status, location_id, merchant_business_entity_id,
+                        merchant_of_record_app_id, number, order_status_url, phone, po_number, presentment_currency, reference, referring_site,
+                        source_identifier, tax_exempt, taxes_included, test, token, total_outstanding, total_weight, user_id,
+                        current_subtotal_price, current_total_discounts, current_total_price, current_total_tax,
+                        billing_first_name, billing_last_name, billing_address1, billing_address2, billing_city, billing_zip,
+                        billing_province, billing_province_code, billing_country, billing_country_code, billing_phone,
+                        billing_latitude, billing_longitude, billing_company, billing_name, shopify_account
+                    )
+                    VALUES (
+                        tmp.order_id, tmp.order_name, tmp.app_id, tmp.order_checkout_id, tmp.order_created_at, tmp.order_closed_at, tmp.order_updated_at, tmp.order_currency,
+                        tmp.landing_site, tmp.landing_site_ref, tmp.order_number, tmp.financial_status, tmp.order_processed_at, tmp.order_note, tmp.tags, tmp.source_name,
+                        tmp.source_url, tmp.total_price, tmp.subtotal_price, tmp.total_discounts, tmp.total_line_items_price, tmp.total_tax, tmp.total_shipping_price,
+                        tmp.total_tip_received, tmp.discount_code, tmp.discount_amount, tmp.discount_type, tmp.cart_token, tmp.order_checkout_token, tmp.cancel_reason,
+                        tmp.cancelled_at, tmp.shipping_country, tmp.shipping_country_code, tmp.shipping_province, tmp.shipping_province_code, tmp.shipping_city,
+                        tmp.shipping_zip, tmp.shipping_latitude, tmp.shipping_longitude, tmp.customer_id, tmp.customer_email, tmp.mktg_accepted,
+                        tmp.admin_graphql_api_id, tmp.browser_ip, tmp.confirmation_number, tmp.confirmed, tmp.contact_email, tmp.currency, tmp.customer_locale, tmp.device_id,
+                        tmp.duties_included, tmp.email, tmp.estimated_taxes, tmp.fulfillment_status, tmp.location_id, tmp.merchant_business_entity_id,
+                        tmp.merchant_of_record_app_id, tmp.number, tmp.order_status_url, tmp.phone, tmp.po_number, tmp.presentment_currency, tmp.reference, tmp.referring_site,
+                        tmp.source_identifier, tmp.tax_exempt, tmp.taxes_included, tmp.test, tmp.token, tmp.total_outstanding, tmp.total_weight, tmp.user_id,
+                        tmp.current_subtotal_price, tmp.current_total_discounts, tmp.current_total_price, tmp.current_total_tax,
+                        tmp.billing_first_name, tmp.billing_last_name, tmp.billing_address1, tmp.billing_address2, tmp.billing_city, tmp.billing_zip,
+                        tmp.billing_province, tmp.billing_province_code, tmp.billing_country, tmp.billing_country_code, tmp.billing_phone,
+                        tmp.billing_latitude, tmp.billing_longitude, tmp.billing_company, tmp.billing_name, tmp.shopify_account
+                    );
+

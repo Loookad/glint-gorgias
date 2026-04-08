@@ -1,0 +1,50 @@
+schema:
+    fields:
+        id:
+            type: string
+
+from_api:
+    location: ${{ env.KLAVIYO_LOCATION }}_klaviyo
+    api:
+        request:
+            path: "/api/campaigns?filter=equals(messages.channel,'email')"
+        response:
+            query: |
+               data[].{
+                    campaign_id: id,
+                    campaign_name: attributes.name,
+                    campaign_status: attributes.status,
+                    campaign_archived: attributes.archived,
+                    campaign_audience_included: attributes.audiences.included,
+                    campaign_audience_excluded: attributes.audiences.excluded,
+                    smart_sending: attributes.send_options.use_smart_sending,
+                    tracking_clicks: attributes.tracking_options.is_tracking_clicks,
+                    tracking_opens: attributes.tracking_options.is_tracking_opens,
+                    send_strategy_method: attributes.send_strategy.method,
+                    send_strategy_datetime: attributes.send_strategy.datetime,
+                    send_strategy_immediate: attributes.send_strategy.options.send_past_recipients_immediately,
+                    created_at: attributes.created_at,
+                    updated_at: attributes.updated_at,
+                    scheduled_at: attributes.scheduled_at,
+                    send_time: attributes.send_time
+                    }
+        pagination:
+            cursor:
+                position: body
+                query: links.next
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                global_timeout: 900
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.KLAVIYO_LOCATION }}_klaviyo.email_campaigns
+        if_exists: replace
+
+
+# campaign_messages_data: relationships."campaign-messages".data,
+# tags_data: relationships.tags.data
+# tracking_params: attributes.tracking_options.custom_tracking_params,

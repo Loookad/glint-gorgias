@@ -1,0 +1,163 @@
+partitions:
+    temporal:
+        start_date: "${{ env.SHOPIFY_START_DATE }}"
+        time_unit: "monthly"
+
+satellite:
+    tier: small
+    communication:
+        timeout: 900
+
+inputs:
+    raw_data/shopify/orders_line_items:
+        from_api:
+            params:
+                created_at_min: "{{ (datetime.strptime(run.one_month_ago, '%Y-%m-%d') - timedelta(hours=1)).isoformat() }}"
+                created_at_max: "{{ (datetime.strptime(run.today, '%Y-%m-%d') + timedelta(hours=2)).isoformat() }}"
+            allow_empty: true
+        from_api_second:
+            params:
+                created_at_min: "{{ (datetime.strptime(run.one_month_ago, '%Y-%m-%d') - timedelta(hours=1)).isoformat() }}"
+                created_at_max: "{{ (datetime.strptime(run.today, '%Y-%m-%d') + timedelta(hours=2)).isoformat() }}"
+            allow_empty: true
+
+
+compute:
+    steps:
+        - get_items:
+            jq:
+                orient: list
+                table: "raw_data/shopify/orders_line_items:from_api"
+                query: |
+                    . as $data
+                       | (
+                           [ range(0; ($data.order_number | length)) as $i
+                             | $data.order_number[$i] as $order_number
+                             | $data.created_at[$i]    as $created_at
+                             | $data.id[$i]            as $id
+                             | $data.line_items[$i][]?
+                             | {
+                                 order_number: $order_number,
+                                 order_id: $id,
+                                 order_created_at: $created_at,
+                                 line_item_id: .id,
+                                 line_item_product_id: .product_id,
+                                 line_item_quantity: .quantity,
+                                 line_item_sku: .sku,
+                                 line_item_name: .name,
+                                 line_item_price: .price,
+                                 line_item_shop_money_amount: .shop_money_amount,
+                                 line_item_total_discount: .total_discount,
+                                 __dummy: false
+                               }
+                           ] 
+                         ) as $rows
+                       | if ($rows | length) > 0 then
+                           $rows
+                         else
+                           [{
+                             order_number: null,
+                             order_id: null,
+                             order_created_at: null,
+                             line_item_id: null,
+                             line_item_product_id: null,
+                             line_item_quantity: null,
+                             line_item_sku: null,
+                             line_item_name: null,
+                             line_item_price: null,
+                             line_item_shop_money_amount: null,
+                             line_item_total_discount: null,
+                             __dummy: true
+                           }]
+                         end
+
+        - get_items_second:
+            jq:
+                orient: list
+                table: "raw_data/shopify/orders_line_items:from_api_second"
+                query: |
+                    . as $data
+                       | (
+                           [ range(0; ($data.order_number | length)) as $i
+                             | $data.order_number[$i] as $order_number
+                             | $data.created_at[$i]    as $created_at
+                             | $data.id[$i]            as $id
+                             | $data.line_items[$i][]?
+                             | {
+                                 order_number: $order_number,
+                                 order_id: $id,
+                                 order_created_at: $created_at,
+                                 line_item_id: .id,
+                                 line_item_product_id: .product_id,
+                                 line_item_quantity: .quantity,
+                                 line_item_sku: .sku,
+                                 line_item_name: .name,
+                                 line_item_price: .price,
+                                 line_item_shop_money_amount: .shop_money_amount,
+                                 line_item_total_discount: .total_discount,
+                                 __dummy: false
+                               }
+                           ] 
+                         ) as $rows
+                       | if ($rows | length) > 0 then
+                           $rows
+                         else
+                           [{
+                             order_number: null,
+                             order_id: null,
+                             order_created_at: null,
+                             line_item_id: null,
+                             line_item_product_id: null,
+                             line_item_quantity: null,
+                             line_item_sku: null,
+                             line_item_name: null,
+                             line_item_price: null,
+                             line_item_shop_money_amount: null,
+                             line_item_total_discount: null,
+                             __dummy: true
+                           }]
+                         end
+
+        - union_all: 
+            sql: 
+                query: |
+                    SELECT 
+                        '${{ env.SHOPIFY_LOCATION_1 }}' AS shopify_account,
+                        order_created_at,
+                        order_number,
+                        line_item_id,
+                        line_item_product_id,
+                        line_item_quantity,
+                        line_item_sku,
+                        line_item_name,
+                        line_item_price,
+                        line_item_shop_money_amount,
+                        line_item_total_discount,
+                        order_id
+                    FROM "steps:get_items"
+                    WHERE COALESCE(__dummy, false) = false
+                    UNION ALL
+                    SELECT 
+                        '${{ env.SHOPIFY_LOCATION_2 }}' AS shopify_account,
+                        order_created_at,
+                        order_number,
+                        line_item_id,
+                        line_item_product_id,
+                        line_item_quantity,
+                        line_item_sku,
+                        line_item_name,
+                        line_item_price,
+                        line_item_shop_money_amount,
+                        line_item_total_discount,
+                        order_id
+                    FROM "steps:get_items_second"
+                    WHERE COALESCE(__dummy, false) = false
+
+
+outputs:
+    raw_data/shopify/orders_line_items:
+        to_bq:
+            validation: true
+            allow_empty: true
+
+

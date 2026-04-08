@@ -1,0 +1,36 @@
+schema:
+    fields:
+        id:
+            type: string
+
+from_api:
+    location: ${{ env.KLAVIYO_LOCATION }}_klaviyo
+    api:
+        request:
+            path: "/api/metrics"
+        response:
+            query: |
+                 data[].{
+                        metric_id: id,
+                        metric_type: type,
+                        metric_name: attributes.name,
+                        metric_created: attributes.created,
+                        metric_updated: attributes.updated
+                        }
+        pagination:
+            cursor:
+                position: body
+                query: links.next
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                global_timeout: 900
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.KLAVIYO_LOCATION }}_klaviyo.metrics
+        if_exists: replace
+
+# flow_data: relationships."flow-triggers".data,

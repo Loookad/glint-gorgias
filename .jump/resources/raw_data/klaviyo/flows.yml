@@ -1,0 +1,53 @@
+schema:
+    fields:
+        id:
+            type: string
+
+from_api:
+    location: ${{ env.KLAVIYO_LOCATION }}_klaviyo
+    api:
+        request:
+            path: "/api/flows?page[size]=50"
+        response:
+            query: |
+               data[].{
+                    flow_id: data[0].id,
+                    flow_type: data[0].type,
+                    flow_name: data[0].attributes.name,
+                    flow_status: data[0].attributes.status,
+                    flow_archived: data[0].attributes.archived,
+                    flow_created: data[0].attributes.created,
+                    flow_updated: data[0].attributes.updated,
+                    flow_trigger_type: data[0].attributes.trigger_type,
+                    flow_action_id: data[0].relationships."flow-actions".data[0].id,
+                    flow_action_type: included[?type=='flow-action'] | [0].attributes.action_type,
+                    flow_action_status: included[?type=='flow-action'] | [0].attributes.status,
+                    flow_action_created: included[?type=='flow-action'] | [0].attributes.created,
+                    flow_action_updated: included[?type=='flow-action'] | [0].attributes.updated,
+                    flow_action_tracking_add_utm: included[?type=='flow-action'] | [0].attributes.tracking_options.add_utm,
+                    flow_action_tracking_utm_name: included[?type=='flow-action'] | [0].attributes.tracking_options.utm_params[0].name,
+                    flow_action_tracking_utm_value: included[?type=='flow-action'] | [0].attributes.tracking_options.utm_params[0].value,
+                    flow_action_tracking_opens: included[?type=='flow-action'] | [0].attributes.tracking_options.is_tracking_opens,
+                    flow_action_tracking_clicks: included[?type=='flow-action'] | [0].attributes.tracking_options.is_tracking_clicks,
+                    flow_action_use_smart_sending: included[?type=='flow-action'] | [0].attributes.send_options.use_smart_sending,
+                    flow_action_is_transactional: included[?type=='flow-action'] | [0].attributes.send_options.is_transactional,
+                    flow_action_shorten_links: included[?type=='flow-action'] | [0].attributes.render_options.shorten_links,
+                    flow_action_add_org_prefix: included[?type=='flow-action'] | [0].attributes.render_options.add_org_prefix,
+                    flow_action_add_info_link: included[?type=='flow-action'] | [0].attributes.render_options.add_info_link,
+                    flow_action_add_opt_out_language: included[?type=='flow-action'] | [0].attributes.render_options.add_opt_out_language,
+                    tag_id: data[0].relationships.tags.data[0].id,
+                    tag_name: included[?type=='tag'] | [0].attributes.name
+                    }
+        pagination:
+            cursor:
+                position: body
+                query: links.next
+                injection:
+                    position: path
+            strategy: cursor_pagination
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.KLAVIYO_LOCATION }}_klaviyo.flows
+        if_exists: replace

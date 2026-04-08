@@ -1,0 +1,46 @@
+description: |
+
+schema:
+    fields:
+        gads_account:
+            type: string
+        segments_date:
+            type: date32
+        campaign_id:
+            type: string
+        campaign_name:
+            type: string
+        segments_geo_target_state:
+            type: string
+        segments_geo_target_region:
+            type: string
+
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.WORKSPACE }}_google_ads.geographic_view
+        if_exists: 
+            merge_with_side_table:
+                side_table: ${{ env.WORKSPACE }}_google_ads.geographic_view_tmp_upsert
+                query: |
+                    MERGE `${{ env.WORKSPACE }}_google_ads.geographic_view` sp
+                    USING `${{ env.WORKSPACE }}_google_ads.geographic_view_tmp_upsert` tmp
+                    ON sp.segments_date = tmp.segments_date AND sp.gads_account = tmp.gads_account AND sp.campaign_id = tmp.campaign_id
+                    WHEN MATCHED THEN
+                    UPDATE SET
+                        segments_date = tmp.segments_date,
+                        campaign_id = tmp.campaign_id,
+                        campaign_name = tmp.campaign_name,
+                        segments_geo_target_state = tmp.segments_geo_target_state,
+                        segments_geo_target_region = tmp.segments_geo_target_region
+
+
+                    WHEN NOT MATCHED THEN
+                    INSERT (
+                        segments_date, campaign_id, campaign_name, segments_geo_target_state, 
+                        segments_geo_target_region, gads_account
+                    )
+                    VALUES (
+                        tmp.segments_date, tmp.campaign_id, tmp.campaign_name, 
+                        tmp.segments_geo_target_state, tmp.segments_geo_target_region, tmp.gads_account
+                    );

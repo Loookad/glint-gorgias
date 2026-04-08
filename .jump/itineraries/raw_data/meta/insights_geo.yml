@@ -1,0 +1,91 @@
+schedules:
+    timezone: Europe/Rome
+    fixed:
+        cron: "${{ env.META_CRON }}"
+
+partitions:
+    temporal:
+        start_date: "${{ env.META_START_DATE }}"
+        time_unit: daily
+
+satellite:
+    tier: small
+    communication:
+        timeout: 900
+
+
+inputs:
+    raw_data/meta/insights/insights_geo:
+        from_api:
+            params:
+                from_date: "{{ run.yesterday }}"
+                to_date: "{{ run.yesterday }}"
+            allow_empty: true
+        from_api_second:
+            params:
+                from_date: "{{ run.yesterday }}"
+                to_date: "{{ run.yesterday }}"
+            allow_empty: true
+
+compute:
+    steps:
+        - union_all: 
+            sql: 
+                query: |
+                    SELECT 
+                        '${{ env.META_ACCOUNT_1 }}' AS meta_account,
+                        partition_date,
+                        kelpie_date,
+                        account_id,
+                        account_currency,
+                        campaign_id,
+                        campaign_name,
+                        optimization_goal,
+                        ad_id,
+                        ad_name,
+                        spend,
+                        impressions,
+                        clicks,
+                        outbound_clicks,
+                        unique_clicks,
+                        unique_outbound_clicks,
+                        reach,
+                        frequency,
+                        purchases,
+                        add_to_carts,
+                        link_clicks,
+                        region,
+                        country
+                    FROM "raw_data/meta/insights/insights_geo:from_api"
+                    UNION ALL
+                    SELECT 
+                        '${{ env.META_ACCOUNT_2 }}' AS meta_account,
+                        partition_date,
+                        kelpie_date,
+                        account_id,
+                        account_currency,
+                        campaign_id,
+                        campaign_name,
+                        optimization_goal,
+                        ad_id,
+                        ad_name,
+                        spend,
+                        impressions,
+                        clicks,
+                        outbound_clicks,
+                        unique_clicks,
+                        unique_outbound_clicks,
+                        reach,
+                        frequency,
+                        purchases,
+                        add_to_carts,
+                        link_clicks,
+                        region,
+                        country
+                    FROM "raw_data/meta/insights/insights_geo:from_api_second"
+
+outputs:
+    raw_data/meta/insights/insights_geo:
+        to_bq:
+            validation: true
+            allow_empty: true

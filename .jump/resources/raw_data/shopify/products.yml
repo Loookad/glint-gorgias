@@ -1,0 +1,130 @@
+description: |
+    Resource that maps the api Products.
+
+metadata:
+    documentation: https://shopify.dev/docs/api/admin-rest/2025-04/resources/product#get-products
+
+schema:
+    fields:
+        shopify_account:
+            type: string
+        product_id:
+            type: string
+        product_type:
+            type: string
+        created_at:
+            type: timestamp[s,UTC]
+        updated_at:
+            type: timestamp[s,UTC]
+        status:
+            type: string
+        tags:
+            type: string
+        title:
+            type: string
+        image_source:
+            type: string
+
+from_api:
+    location: ${{ env.SHOPIFY_LOCATION_1 }}_shopify
+    api:
+        request:
+            path: "/admin/api/2025-04/products.json?\
+                ${{ env.EMPTY_RESPONSE_SHOPIFY_CALL_1 }}&\
+                created_at_max=${{ param.created_at_max }}&\
+                created_at_min=${{ param.created_at_min }}&\
+                limit=250"
+        response:
+            query: |
+                (([products, @][?type(@) == 'array'])[0])[].{
+                    product_id: id,
+                    created_at: created_at,
+                    updated_at: updated_at,
+                    product_type: product_type,
+                    tags: tags,
+                    title: title,
+                    status: status,
+                    image_source: image.src
+                }
+        pagination:
+            cursor:
+                position: header
+                key: link
+                regex: |
+                    <([^>]+)>;\s*rel=\"next\"
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                interval: 0.5
+                global_timeout: 900
+
+from_api_second:
+    location: ${{ env.SHOPIFY_LOCATION_2 }}_shopify
+    api:
+        request:
+            path: "/admin/api/2025-04/products.json?\
+                ${{ env.EMPTY_RESPONSE_SHOPIFY_CALL_2 }}&\
+                created_at_max=${{ param.created_at_max }}&\
+                created_at_min=${{ param.created_at_min }}&\
+                limit=250"
+        response:
+            query: |
+                (([products, @][?type(@) == 'array'])[0])[].{
+                    product_id: id,
+                    created_at: created_at,
+                    updated_at: updated_at,
+                    product_type: product_type,
+                    tags: tags,
+                    title: title,
+                    status: status,
+                    image_source: image.scr
+                }
+
+        pagination:
+            cursor:
+                position: header
+                key: link
+                regex: |
+                    <([^>]+)>;\s*rel=\"next\"
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                interval: 0.5
+                global_timeout: 900
+
+# This variant uses "merge_with_side_table:" operation to merge the new data with the table already existing on BigQuery. 
+# When running the itinerary for the first time, or when the table on BigQuery is empty, comment all lines starting from "merge_with_side_table:" and use instead "replace". 
+# After the first data uploaded to the table, return to using "merge_with_side_table:".
+# Documentation on writing to a database: https://jump.hiop.io/docs/reference/core/resource/connectors/sql/#write-data-to-a-database
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.WORKSPACE }}_shopify.products
+        if_exists:
+            merge_with_side_table:
+                side_table: ${{ env.WORKSPACE }}_shopify.products_tmp_upsert
+                query: |
+                    MERGE `${{ env.WORKSPACE }}_shopify.products` sp
+                    USING `${{ env.WORKSPACE }}_shopify.products_tmp_upsert` tmp
+                    ON sp.product_id = tmp.product_id AND sp.shopify_account = tmp.shopify_account
+                    WHEN MATCHED THEN
+                    UPDATE SET
+                        created_at                 = tmp.created_at,
+                        updated_at                 = tmp.updated_at,
+                        product_id                 = tmp.product_id,
+                        product_type             = tmp.product_type,
+                        status                         = tmp.status,
+                        title                            =tmp.title,
+                        tags                             = tmp.tags,
+                        image_source              = tmp.image_source
+
+
+                    WHEN NOT MATCHED THEN
+                    INSERT (
+                        created_at,updated_at,product_id,product_type,status,title,tags,image_source,shopify_account
+                    )
+                    VALUES (
+                        tmp.created_at,tmp.updated_at,tmp.product_id,tmp.product_type,tmp.status,tmp.title,tmp.tags,tmp.image_source, tmp.shopify_account
+                    );

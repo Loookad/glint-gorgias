@@ -1,0 +1,187 @@
+description: |
+    Resource that maps the api Customers/Customer.
+    It takes only the relevant fields not in arrays.
+
+metadata:
+    documentation: https://shopify.dev/docs/api/admin-rest/2025-01/resources/customer#get-customers
+
+schema:
+    fields:
+        shopify_account:
+            type: string
+        id:
+            type: string
+        email:
+            type: string
+        created_at:
+            type: timestamp[s,UTC]
+        updated_at:
+            type: timestamp[s,UTC]
+        first_name:
+            type: string
+        last_name:
+            type: string
+        orders_count:
+            type: int64
+        state:
+            type: string
+        total_spent:
+            type: double
+        last_order_id:
+            type: string
+        note:
+            type: string
+        verified_email:
+            type: string
+        multipass_identifier:
+            type: string
+        tax_exempt:
+            type: string
+        tags:
+            type: string
+        last_order_name:
+            type: string
+        currency:
+            type: string
+        phone:
+            type: string
+        accepted_mktg:
+            type: string
+
+from_api:
+    location: ${{ env.SHOPIFY_LOCATION_1 }}_shopify
+    api:
+        request:
+            path: "/admin/api/2025-01/customers.json?\
+                ${{ env.EMPTY_RESPONSE_SHOPIFY_CALL_1 }}&\
+                created_at_max=${{ param.created_at_max }}&\
+                created_at_min=${{ param.created_at_min }}&\
+                limit=250"
+        response:
+            query: |
+                customers[].{
+                    id: id,
+                    email: email,
+                    created_at: created_at,
+                    updated_at: updated_at,
+                    first_name: first_name,
+                    last_name: last_name,
+                    orders_count: orders_count,
+                    state: state,
+                    total_spent: total_spent,
+                    last_order_id: last_order_id,
+                    note: note,
+                    verified_email: verified_email,
+                    multipass_identifier: multipass_identifier,
+                    tax_exempt: tax_exempt,
+                    tags: tags,
+                    last_order_name: last_order_name,
+                    currency: currency,
+                    phone: phone,
+                    accepted_mktg: email_marketing_consent.state
+                }
+        pagination:
+            cursor:
+                position: header
+                key: link
+                regex: |
+                    <([^>]+)>;\s*rel=\"next\"
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                interval: 0.5
+                global_timeout: 900
+
+from_api_second:
+    location: ${{ env.SHOPIFY_LOCATION_2 }}_shopify
+    api:
+        request:
+            path: "/admin/api/2025-01/customers.json?\
+                ${{ env.EMPTY_RESPONSE_SHOPIFY_CALL_2 }}&\
+                created_at_max=${{ param.created_at_max }}&\
+                created_at_min=${{ param.created_at_min }}&\
+                limit=250"
+        response:
+            query: |
+                (([customers, @][?type(@) == 'array'])[0])[].{
+                    id: id,
+                    email: email,
+                    created_at: created_at,
+                    updated_at: updated_at,
+                    first_name: first_name,
+                    last_name: last_name,
+                    orders_count: orders_count,
+                    state: state,
+                    total_spent: total_spent,
+                    last_order_id: last_order_id,
+                    note: note,
+                    verified_email: verified_email,
+                    multipass_identifier: multipass_identifier,
+                    tax_exempt: tax_exempt,
+                    tags: tags,
+                    last_order_name: last_order_name,
+                    currency: currency,
+                    phone: phone,
+                    accepted_mktg: email_marketing_consent.state
+                }
+        pagination:
+            cursor:
+                position: header
+                key: link
+                regex: |
+                    <([^>]+)>;\s*rel=\"next\"
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                interval: 0.5
+                global_timeout: 900
+
+# This variant uses "merge_with_side_table:" operation to merge the new data with the table already existing on BigQuery. 
+# When running the itinerary for the first time, or when the table on BigQuery is empty, comment all lines starting from "merge_with_side_table:" and use instead "replace". 
+# After the first data uploaded to the table, return to using "merge_with_side_table:".
+# Documentation on writing to a database: https://jump.hiop.io/docs/reference/core/resource/connectors/sql/#write-data-to-a-database
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.WORKSPACE }}_shopify.customers
+        if_exists: 
+            merge_with_side_table:
+                side_table: ${{ env.WORKSPACE }}_shopify.customers_tmp_upsert
+                query: |
+                    MERGE `${{ env.WORKSPACE }}_shopify.customers` sp
+                    USING `${{ env.WORKSPACE }}_shopify.customers_tmp_upsert` tmp
+                    ON sp.id = tmp.id AND sp.shopify_account = tmp.shopify_account
+                    WHEN MATCHED THEN
+                    UPDATE SET
+                        email                 = tmp.email,
+                        created_at            = tmp.created_at,
+                        updated_at            = tmp.updated_at,
+                        first_name            = tmp.first_name,
+                        last_name             = tmp.last_name,
+                        orders_count          = tmp.orders_count,
+                        state                 = tmp.state,
+                        total_spent           = tmp.total_spent,
+                        last_order_id         = tmp.last_order_id,
+                        note                  = tmp.note,
+                        verified_email        = tmp.verified_email,
+                        multipass_identifier  = tmp.multipass_identifier,
+                        tax_exempt            = tmp.tax_exempt,
+                        tags                  = tmp.tags,
+                        last_order_name       = tmp.last_order_name,
+                        currency              = tmp.currency,
+                        phone                 = tmp.phone,
+                        accepted_mktg         = tmp.accepted_mktg
+                    WHEN NOT MATCHED THEN
+                    INSERT (
+                        id, email, created_at, updated_at, first_name, last_name, orders_count, state,
+                        total_spent, last_order_id, note, verified_email, multipass_identifier, tax_exempt,
+                        tags, last_order_name, currency, phone, accepted_mktg, shopify_account
+                    )
+                    VALUES (
+                        tmp.id, tmp.email, tmp.created_at, tmp.updated_at, tmp.first_name, tmp.last_name,
+                        tmp.orders_count, tmp.state, tmp.total_spent, tmp.last_order_id, tmp.note,
+                        tmp.verified_email, tmp.multipass_identifier, tmp.tax_exempt, tmp.tags,
+                        tmp.last_order_name, tmp.currency, tmp.phone, tmp.accepted_mktg, tmp.shopify_account
+                    );

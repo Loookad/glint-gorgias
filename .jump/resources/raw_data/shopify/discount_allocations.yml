@@ -1,0 +1,122 @@
+description: |
+    Resource that maps the api Orders/Order discount allocations.
+    It takes only the relevant fields.
+
+metadata:
+    documentation: https://shopify.dev/docs/api/admin-rest/2025-01/resources/order#get-orders
+
+schema:
+    fields:   
+        shopify_account:
+            type: string     
+        order_created_at:
+            type: timestamp[s,UTC]
+        order_number:
+            type: string
+        order_id:
+            type: string
+        line_item_id:
+            type: string
+        discount_amount:
+            type: double
+        discount_shop_money_amount:
+            type: double
+        discount_shop_money_currency_code:
+            type: string
+        discount_presentment_money_amount:
+            type: double
+        discount_presentment_money_currency_code:
+            type: string
+        discount_application_index:
+            type: string
+
+
+from_api:
+    location: ${{ env.SHOPIFY_LOCATION_1 }}_shopify
+    api:
+        request:
+            path: "/admin/api/2025-01/orders.json?\
+                ${{ env.EMPTY_RESPONSE_SHOPIFY_CALL_1 }}&\
+                fields=order_number,id,created_at,line_items&\
+                created_at_max=${{ param.created_at_max }}&\
+                created_at_min=${{ param.created_at_min }}&\
+                status=any&\
+                limit=250"
+        response:
+            query: |
+                (([orders, @][?type(@) == 'array'])[0])[]
+        pagination:
+            cursor:
+                position: header
+                key: link
+                regex: |
+                    <([^>]+)>;\s*rel=\"next\"
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                interval: 0.5
+                global_timeout: 900
+
+from_api_second:
+    location: ${{ env.SHOPIFY_LOCATION_2 }}_shopify
+    api:
+        request:
+            path: "/admin/api/2025-01/orders.json?\
+                ${{ env.EMPTY_RESPONSE_SHOPIFY_CALL_2 }}&\
+                fields=order_number,id,created_at,line_items&\
+                created_at_max=${{ param.created_at_max }}&\
+                created_at_min=${{ param.created_at_min }}&\
+                status=any&\
+                limit=250"
+        response:
+            query: |
+                (([orders, @][?type(@) == 'array'])[0])[]
+        pagination:
+            cursor:
+                position: header
+                key: link
+                regex: |
+                    <([^>]+)>;\s*rel=\"next\"
+                injection:
+                    position: path
+            strategy: cursor_pagination
+            per_request_config:
+                interval: 0.5
+                global_timeout: 900
+
+# This variant uses "merge_with_side_table:" operation to merge the new data with the table already existing on BigQuery. 
+# When running the itinerary for the first time, or when the table on BigQuery is empty, comment all lines starting from "merge_with_side_table:" and use instead "replace". 
+# After the first data uploaded to the table, return to using "merge_with_side_table:".
+# Documentation on writing to a database: https://jump.hiop.io/docs/reference/core/resource/connectors/sql/#write-data-to-a-database
+to_bq:
+    location: hiop_project_raw
+    sql:
+        table: ${{ env.WORKSPACE }}_shopify.discounts
+        if_exists: 
+            merge_with_side_table:
+                side_table: ${{ env.WORKSPACE }}_shopify.discounts_tmp_upsert
+                query: |
+                    MERGE `${{ env.WORKSPACE }}_shopify.discounts` sp
+                    USING `${{ env.WORKSPACE }}_shopify.discounts_tmp_upsert` tmp
+                    ON sp.order_id = tmp.order_id AND sp.shopify_account = tmp.shopify_account
+                       AND sp.line_item_id = tmp.line_item_id
+                       AND sp.discount_application_index = tmp.discount_application_index
+                    WHEN MATCHED THEN
+                    UPDATE SET
+                        order_created_at                        = tmp.order_created_at,
+                        order_number                             = tmp.order_number,
+                        discount_amount                          = tmp.discount_amount,
+                        discount_shop_money_amount               = tmp.discount_shop_money_amount,
+                        discount_shop_money_currency_code        = tmp.discount_shop_money_currency_code,
+                        discount_presentment_money_amount        = tmp.discount_presentment_money_amount,
+                        discount_presentment_money_currency_code = tmp.discount_presentment_money_currency_code
+                    WHEN NOT MATCHED THEN
+                    INSERT (
+                        order_created_at, order_number, order_id, line_item_id, discount_amount, discount_shop_money_amount,
+                        discount_shop_money_currency_code, discount_presentment_money_amount, discount_presentment_money_currency_code, discount_application_index, shopify_account
+                    )
+                    VALUES (
+                        tmp.order_created_at, tmp.order_number, tmp.order_id, tmp.line_item_id, tmp.discount_amount, tmp.discount_shop_money_amount,
+                        tmp.discount_shop_money_currency_code, tmp.discount_presentment_money_amount, tmp.discount_presentment_money_currency_code, tmp.discount_application_index, tmp.shopify_account
+                    );
